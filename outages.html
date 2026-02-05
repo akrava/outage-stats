@@ -401,7 +401,13 @@
     
     <script>
         const API_URL = 'https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/25/dsos/902/planned-outages';
-        const CORS_PROXY = 'https://corsproxy.io/?';
+        
+        // Multiple CORS proxies to try (fallback chain)
+        const CORS_PROXIES = [
+            { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' },
+            { name: 'corsproxy.org', url: 'https://corsproxy.org/?' },
+            { name: 'cors.sh', url: 'https://proxy.cors.sh/' }
+        ];
         
         // Add loading and error styles
         const style = document.createElement('style');
@@ -991,48 +997,61 @@
         async function fetchData() {
             showLoading();
             
-            try {
-                // Use CORS proxy to bypass CORS restrictions
-                const response = await fetch(CORS_PROXY + encodeURIComponent(API_URL), {
-                    headers: {
-                        'Accept': 'application/json, text/plain, */*'
+            let lastError = null;
+            
+            // Try each CORS proxy in order until one works
+            for (const proxy of CORS_PROXIES) {
+                try {
+                    console.log(`Trying ${proxy.name}...`);
+                    const response = await fetch(proxy.url + encodeURIComponent(API_URL), {
+                        headers: {
+                            'Accept': 'application/json, text/plain, */*'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    
+                    outageData = await response.json();
+                    
+                    if (!outageData || Object.keys(outageData).length === 0) {
+                        throw new Error('No outage data received');
+                    }
+                    
+                    console.log(`Success with ${proxy.name}`);
+                    hideLoading();
+                    clearAllContainers();
+                    
+                    const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(outageData);
+                    updateSubtitle(outageData);
+                    renderStats(hourlyOutages, groups.length, groupStats, groups);
+                    renderHeatmap(hourlyOutages, groups.length);
+                    renderBarChart(hourlyOutages, groups.length);
+                    renderPowerStatusChart(hourlyOutages, groups.length);
+                    renderDetailedGrid(groupHourData, groups);
+                    
+                    // Add refresh button if not exists
+                    if (!document.querySelector('.refresh-btn')) {
+                        const refreshBtn = document.createElement('button');
+                        refreshBtn.className = 'refresh-btn';
+                        refreshBtn.innerHTML = '🔄 Refresh';
+                        refreshBtn.onclick = fetchData;
+                        document.body.appendChild(refreshBtn);
+                    }
+                    
+                    return; // Success - exit the function
+                    
+                } catch (error) {
+                    console.warn(`${proxy.name} failed:`, error.message);
+                    lastError = error;
+                    // Continue to next proxy
                 }
-                
-                outageData = await response.json();
-                
-                if (!outageData || Object.keys(outageData).length === 0) {
-                    throw new Error('No outage data received');
-                }
-                
-                hideLoading();
-                clearAllContainers();
-                
-                const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(outageData);
-                updateSubtitle(outageData);
-                renderStats(hourlyOutages, groups.length, groupStats, groups);
-                renderHeatmap(hourlyOutages, groups.length);
-                renderBarChart(hourlyOutages, groups.length);
-                renderPowerStatusChart(hourlyOutages, groups.length);
-                renderDetailedGrid(groupHourData, groups);
-                
-                // Add refresh button if not exists
-                if (!document.querySelector('.refresh-btn')) {
-                    const refreshBtn = document.createElement('button');
-                    refreshBtn.className = 'refresh-btn';
-                    refreshBtn.innerHTML = '🔄 Refresh';
-                    refreshBtn.onclick = fetchData;
-                    document.body.appendChild(refreshBtn);
-                }
-                
-            } catch (error) {
-                console.error('Failed to fetch outage data:', error);
-                showError(error.message);
             }
+            
+            // All proxies failed
+            console.error('All CORS proxies failed');
+            showError(lastError?.message || 'All CORS proxies failed. Please try again later.');
         }
 
         // Initialize - fetch data on page load
