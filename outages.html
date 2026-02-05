@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kyiv Power Outage Heatmap - Yasno</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .heatmap-container {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .heatmap-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        .heatmap {
+            display: grid;
+            grid-template-columns: repeat(48, 1fr);
+            gap: 2px;
+        }
+        .hour-cell {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .hour-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        .hour-label {
+            font-size: 10px;
+            opacity: 0.8;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .stat-card h3 {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .stat-value.good {
+            color: #10b981;
+        }
+        .stat-label {
+            color: #888;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        .stat-list {
+            font-size: 13px;
+            color: #ccc;
+        }
+        .stat-list li {
+            margin: 4px 0;
+            list-style: none;
+        }
+        .summary-bar {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-item .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .summary-item .label {
+            font-size: 11px;
+            color: #888;
+        }
+        .group-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 3px;
+            margin-top: 20px;
+        }
+        .group-cell {
+            height: 12px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            cursor: pointer;
+        }
+        .group-cell:hover {
+            outline: 2px solid #fff;
+        }
+        .tooltip {
+            position: fixed;
+            background: #0f0f23;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+        .bar-chart {
+            position: relative;
+            height: 200px;
+            padding: 10px 10px 10px 0;
+        }
+        .chart-grid {
+            position: absolute;
+            top: 10px;
+            left: 40px;
+            right: 0;
+            bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .grid-line {
+            border-top: 1px dashed #333;
+            position: relative;
+        }
+        .grid-label {
+            position: absolute;
+            left: -35px;
+            top: -8px;
+            font-size: 10px;
+            color: #666;
+        }
+        .chart-area {
+            position: absolute;
+            top: 10px;
+            left: 40px;
+            right: 0;
+            bottom: 30px;
+        }
+        .chart-line {
+            fill: none;
+            stroke: #e94560;
+            stroke-width: 2;
+        }
+        .chart-fill {
+            fill: url(#chartGradient);
+        }
+        .chart-dot {
+            fill: #e94560;
+            cursor: pointer;
+        }
+        .chart-dot:hover {
+            fill: #ff6b6b;
+            r: 5;
+        }
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #e94560, #ff6b6b);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: opacity 0.2s;
+        }
+        .bar:hover {
+            opacity: 0.8;
+        }
+        .bar-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #888;
+        }
+        .hour-labels {
+            display: grid;
+            grid-template-columns: repeat(48, 1fr);
+            gap: 2px;
+            text-align: left;
+            font-size: 8px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .hour-labels.chart-labels {
+            margin-left: 40px;
+            margin-right: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .hour-labels.chart-labels div {
+            flex: 1;
+            min-width: 0;
+        }
+        .hour-labels.power-status-labels {
+            margin-left: 0;
+            margin-right: 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .hour-labels.power-status-labels div {
+            flex: 1;
+            min-width: 0;
+        }
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 11px;
+            white-space: nowrap;
+            color: #888;
+        }
+        .power-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 25px;
+            font-size: 11px;
+            padding: 10px 0;
+        }
+        .power-legend span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+        }
+        .power-legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        /* Mobile responsive */
+        @media (max-width: 1080px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.3em;
+            }
+            .heatmap {
+                grid-template-columns: repeat(24, 1fr);
+            }
+            .hour-labels {
+                grid-template-columns: repeat(24, 1fr);
+            }
+            .hour-labels.mobile-2h {
+                grid-template-columns: repeat(12, 1fr);
+            }
+            .heatmap-container {
+                padding: 15px;
+            }
+            .stat-card {
+                padding: 12px;
+            }
+            .summary-bar {
+                padding: 10px;
+            }
+            .summary-item .value {
+                font-size: 1.4em;
+            }
+            .bar-chart {
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Kyiv Power Outage Heatmap</h1>
+        <p class="subtitle">Yasno scheduled outages for Kyiv city</p>
+        
+        <div class="summary-bar" id="summaryBar"></div>
+        
+        <div class="stats" id="stats"></div>
+        
+        <div class="heatmap-container">
+            <div class="heatmap-title">📊 Outage Intensity by 30-min Slot (% of groups affected)</div>
+            <div id="heatmapWrapper"></div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color" style="background: #10b981;"></div> 0-20%</div>
+                <div class="legend-item"><div class="legend-color" style="background: #84cc16;"></div> 20-40%</div>
+                <div class="legend-item"><div class="legend-color" style="background: #eab308;"></div> 40-60%</div>
+                <div class="legend-item"><div class="legend-color" style="background: #f97316;"></div> 60-80%</div>
+                <div class="legend-item"><div class="legend-color" style="background: #ef4444;"></div> 80-100%</div>
+            </div>
+        </div>
+        
+        <div class="heatmap-container">
+            <div class="heatmap-title">📈 Outages Over Time (groups without power)</div>
+            <div class="bar-chart" id="barChart">
+                <svg width="100%" height="100%" id="lineChart"></svg>
+            </div>
+            <div class="hour-labels chart-labels" id="barLabels"></div>
+            <div class="chart-legend" id="barChartLegend"></div>
+        </div>
+        
+        <div class="heatmap-container">
+            <div class="heatmap-title">🔋 Power Status by 30-min Slot</div>
+            <div id="powerStatusChart" style="height: 60px; position: relative; margin-bottom: 10px;"></div>
+            <div class="hour-labels power-status-labels" id="powerStatusLabels"></div>
+            <div class="chart-legend" id="powerStatusLegend"></div>
+        </div>
+        
+        <div class="heatmap-container">
+            <div class="heatmap-title">🔲 Detailed Grid: Groups × Hours (hover for details)</div>
+            <div style="overflow-x: auto;">
+                <div id="detailedGridHeader" style="display: grid; grid-template-columns: 50px repeat(48, 1fr); gap: 1px; min-width: 800px;">
+                    <div></div>
+                </div>
+                <div id="detailedGrid" style="min-width: 800px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Loading outage data...</p>
+    </div>
+    
+    <div class="error" id="error" style="display: none;">
+        <p>❌ Failed to load data</p>
+        <p id="errorMessage"></p>
+        <button onclick="fetchData()">🔄 Retry</button>
+    </div>
+    
+    <script>
+        const API_URL = 'https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/25/dsos/902/planned-outages';
+        const CORS_PROXY = 'https://corsproxy.io/?';
+        
+        // Add loading and error styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .loading {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 60px;
+                color: #888;
+            }
+            .spinner {
+                width: 50px;
+                height: 50px;
+                border: 4px solid #16213e;
+                border-top-color: #e94560;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 20px;
+            }
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+            .error {
+                text-align: center;
+                padding: 40px;
+                color: #ef4444;
+            }
+            .error button {
+                margin-top: 15px;
+                padding: 10px 25px;
+                background: #e94560;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+            }
+            .error button:hover {
+                background: #d63050;
+            }
+            .refresh-btn {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 20px;
+                background: #16213e;
+                color: #fff;
+                border: 1px solid #333;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                z-index: 100;
+                transition: background 0.2s;
+            }
+            .refresh-btn:hover {
+                background: #1f2b4a;
+            }
+            .last-updated {
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+                margin-bottom: 20px;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        let outageData = null;
+
+        // Parse data and calculate outages per 30-min slot
+        function parseOutages(data) {
+            const groups = Object.keys(data);
+            const slotOutages = new Array(48).fill(0); // 48 x 30-min slots
+            const groupSlotData = {};
+            const groupStats = {}; // Track outage duration per group
+            
+            groups.forEach(groupId => {
+                const slots = data[groupId].today?.slots || [];
+                groupSlotData[groupId] = new Array(48).fill(false);
+                groupStats[groupId] = { outageMinutes: 0, outagePeriods: [] };
+                
+                slots.forEach(slot => {
+                    if (slot.type === 'Definite') {
+                        // Calculate outage duration
+                        groupStats[groupId].outageMinutes += (slot.end - slot.start);
+                        groupStats[groupId].outagePeriods.push({ start: slot.start, end: slot.end });
+                        
+                        const startSlot = Math.floor(slot.start / 30);
+                        const endSlot = Math.ceil(slot.end / 30);
+                        
+                        for (let s = startSlot; s < endSlot && s < 48; s++) {
+                            const slotStart = s * 30;
+                            const slotEnd = (s + 1) * 30;
+                            if (slot.start < slotEnd && slot.end > slotStart) {
+                                if (!groupSlotData[groupId][s]) {
+                                    groupSlotData[groupId][s] = true;
+                                    slotOutages[s]++;
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            
+            return { hourlyOutages: slotOutages, groups, groupHourData: groupSlotData, groupStats };
+        }
+
+        function findConsecutiveRanges(slots, values, condition) {
+            const matchingSlots = slots.map((v, i) => condition(v) ? i : -1).filter(i => i >= 0);
+            if (matchingSlots.length === 0) return [];
+            
+            const ranges = [];
+            let rangeStart = matchingSlots[0];
+            let rangeEnd = matchingSlots[0];
+            
+            for (let i = 1; i < matchingSlots.length; i++) {
+                if (matchingSlots[i] === rangeEnd + 1) {
+                    rangeEnd = matchingSlots[i];
+                } else {
+                    ranges.push({ start: rangeStart, end: rangeEnd });
+                    rangeStart = matchingSlots[i];
+                    rangeEnd = matchingSlots[i];
+                }
+            }
+            ranges.push({ start: rangeStart, end: rangeEnd });
+            
+            return ranges;
+        }
+
+        function formatRanges(ranges) {
+            return ranges.map(r => {
+                if (r.start === r.end) {
+                    return formatSlotTime(r.start);
+                }
+                return `${formatSlotTime(r.start)}-${formatSlotTime(r.end + 1)}`;
+            }).join(', ');
+        }
+
+        function formatDuration(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            if (hours === 0) return `${mins}m`;
+            if (mins === 0) return `${hours}h`;
+            return `${hours}h ${mins}m`;
+        }
+
+        function formatGroupId(groupId, allGroups) {
+            // Check if all groups end with .1
+            const allEndWith1 = allGroups.every(g => g.endsWith('.1'));
+            if (allEndWith1 && groupId.endsWith('.1')) {
+                return groupId.slice(0, -2);
+            }
+            return groupId;
+        }
+
+        function formatGroupIds(groupIds, allGroups) {
+            return groupIds.map(id => formatGroupId(id, allGroups)).join(', ');
+        }
+
+        function getColor(percentage) {
+            if (percentage >= 80) return '#ef4444';
+            if (percentage >= 60) return '#f97316';
+            if (percentage >= 40) return '#eab308';
+            if (percentage >= 20) return '#84cc16';
+            return '#10b981';
+        }
+
+        function formatSlotTime(slot) {
+            const hour = Math.floor(slot / 2);
+            const min = slot % 2 === 0 ? '00' : '30';
+            return `${hour}:${min}`;
+        }
+
+        function renderHeatmap(hourlyOutages, totalGroups) {
+            const wrapper = document.getElementById('heatmapWrapper');
+            wrapper.innerHTML = '';
+            const isMobile = window.innerWidth <= 1080;
+            
+            function createCell(slot, count) {
+                const percentage = (count / totalGroups) * 100;
+                const cell = document.createElement('div');
+                cell.className = 'hour-cell';
+                cell.style.backgroundColor = getColor(percentage);
+                cell.style.color = percentage > 50 ? '#fff' : '#000';
+                cell.innerHTML = `<span>${Math.round(percentage)}%</span>`;
+                cell.title = `${formatSlotTime(slot)} - ${formatSlotTime(slot + 1)}\n${count} groups affected (${percentage.toFixed(1)}%)`;
+                return cell;
+            }
+            
+            function createLabels(startSlot, endSlot, cols) {
+                const labelsDiv = document.createElement('div');
+                labelsDiv.className = 'hour-labels';
+                labelsDiv.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+                labelsDiv.style.marginLeft = '0';
+                labelsDiv.style.marginRight = '0';
+                for (let i = startSlot; i < endSlot; i++) {
+                    const label = document.createElement('div');
+                    // Show label every 2 hours (every 4 slots)
+                    if ((i - startSlot) % 4 === 0) {
+                        label.textContent = `${Math.floor(i / 2)}`;
+                    }
+                    labelsDiv.appendChild(label);
+                }
+                return labelsDiv;
+            }
+            
+            if (isMobile) {
+                // Mobile: 2 rows with labels above first row and below second row
+                // Row 1 labels (0:00 - 11:30)
+                const labels1 = createLabels(0, 24, 24);
+                labels1.style.marginBottom = '3px';
+                wrapper.appendChild(labels1);
+                
+                // Row 1 cells (slots 0-23)
+                const row1 = document.createElement('div');
+                row1.className = 'heatmap';
+                row1.style.gridTemplateColumns = 'repeat(24, 1fr)';
+                for (let slot = 0; slot < 24; slot++) {
+                    row1.appendChild(createCell(slot, hourlyOutages[slot]));
+                }
+                wrapper.appendChild(row1);
+                
+                // Row 2 cells (slots 24-47)
+                const row2 = document.createElement('div');
+                row2.className = 'heatmap';
+                row2.style.gridTemplateColumns = 'repeat(24, 1fr)';
+                row2.style.marginTop = '8px';
+                for (let slot = 24; slot < 48; slot++) {
+                    row2.appendChild(createCell(slot, hourlyOutages[slot]));
+                }
+                wrapper.appendChild(row2);
+                
+                // Row 2 labels (12:00 - 23:30)
+                const labels2 = createLabels(24, 48, 24);
+                labels2.style.marginTop = '3px';
+                wrapper.appendChild(labels2);
+            } else {
+                // Desktop: single row of 48 cells with labels below
+                const heatmapRow = document.createElement('div');
+                heatmapRow.className = 'heatmap';
+                heatmapRow.style.gridTemplateColumns = 'repeat(48, 1fr)';
+                for (let slot = 0; slot < 48; slot++) {
+                    heatmapRow.appendChild(createCell(slot, hourlyOutages[slot]));
+                }
+                wrapper.appendChild(heatmapRow);
+                
+                // Labels below
+                const labels = document.createElement('div');
+                labels.className = 'hour-labels';
+                labels.style.gridTemplateColumns = 'repeat(48, 1fr)';
+                labels.style.marginLeft = '0';
+                labels.style.marginRight = '0';
+                for (let i = 0; i < 48; i++) {
+                    const label = document.createElement('div');
+                    label.textContent = i % 2 === 0 ? `${Math.floor(i / 2)}` : '';
+                    labels.appendChild(label);
+                }
+                wrapper.appendChild(labels);
+            }
+        }
+
+        function renderBarChart(hourlyOutages, totalGroups) {
+            const container = document.getElementById('barChart');
+            const labels = document.getElementById('barLabels');
+            const svg = document.getElementById('lineChart');
+            const maxCount = totalGroups; // Use total groups as max scale
+            const isMobile = window.innerWidth <= 1080;
+            
+            // Get container dimensions
+            const rect = container.getBoundingClientRect();
+            const leftPadding = 40;
+            const rightPadding = 10;
+            const topPadding = 10;
+            const bottomPadding = 10;
+            const width = rect.width - leftPadding - rightPadding;
+            const height = rect.height - topPadding - bottomPadding;
+            const dotRadius = isMobile ? 2 : 3;
+            
+            // Create SVG content
+            const gridLines = isMobile ? 4 : 5;
+            let svgContent = `
+                <defs>
+                    <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#e94560;stop-opacity:0.4"/>
+                        <stop offset="100%" style="stop-color:#e94560;stop-opacity:0.05"/>
+                    </linearGradient>
+                </defs>
+            `;
+            
+            // Draw grid lines
+            for (let i = 0; i <= gridLines; i++) {
+                const y = topPadding + (height / gridLines) * i;
+                const value = Math.round(maxCount - (maxCount / gridLines) * i);
+                svgContent += `
+                    <line x1="${leftPadding}" y1="${y}" x2="${leftPadding + width}" y2="${y}" stroke="#333" stroke-dasharray="4"/>
+                    <text x="${leftPadding - 5}" y="${y + 4}" text-anchor="end" fill="#666" font-size="10">${value}</text>
+                `;
+            }
+            
+            // Build line path
+            const points = hourlyOutages.map((count, i) => {
+                const x = leftPadding + (width / 47) * i;
+                const y = topPadding + height - (count / maxCount) * height;
+                return { x, y, count, slot: i };
+            });
+            
+            const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+            const areaPath = `${linePath} L ${points[points.length-1].x} ${topPadding + height} L ${points[0].x} ${topPadding + height} Z`;
+            
+            svgContent += `<path d="${areaPath}" class="chart-fill"/>`;
+            svgContent += `<path d="${linePath}" class="chart-line"/>`;
+            
+            // Add dots - on mobile, show fewer dots
+            const dotInterval = isMobile ? 2 : 1; // Show every 2nd dot on mobile
+            points.forEach((p, idx) => {
+                if (idx % dotInterval === 0) {
+                    svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${dotRadius}" class="chart-dot">
+                        <title>${formatSlotTime(p.slot)}: ${p.count} groups</title>
+                    </circle>`;
+                }
+            });
+            
+            // Y-axis label
+            svgContent += `<text x="12" y="${topPadding + height/2}" text-anchor="middle" fill="#888" font-size="10" transform="rotate(-90, 12, ${topPadding + height/2})">Groups</text>`;
+            
+            svg.innerHTML = svgContent;
+            
+            // X-axis labels - show fewer on mobile, aligned with chart
+            labels.innerHTML = '';
+            const labelInterval = isMobile ? 4 : 2; // Every 2h on mobile, every 1h on desktop
+            for (let slot = 0; slot < 48; slot++) {
+                const label = document.createElement('div');
+                label.textContent = slot % labelInterval === 0 ? `${Math.floor(slot/2)}` : '';
+                labels.appendChild(label);
+            }
+            
+            // Add chart legend below labels
+            const legendContainer = document.getElementById('barChartLegend');
+            legendContainer.innerHTML = '<span style="color:#e94560;">●</span> Groups without power';
+        }
+
+        function renderPowerStatusChart(hourlyOutages, totalGroups) {
+            const container = document.getElementById('powerStatusChart');
+            const labels = document.getElementById('powerStatusLabels');
+            container.innerHTML = '';
+            labels.innerHTML = '';
+            
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'display: flex; height: 100%; gap: 1px;';
+            
+            hourlyOutages.forEach((outageCount, slot) => {
+                const powerOnCount = totalGroups - outageCount;
+                const outagePercent = (outageCount / totalGroups) * 100;
+                
+                const bar = document.createElement('div');
+                bar.style.cssText = `flex: 1; display: flex; flex-direction: column; border-radius: 2px; overflow: hidden;`;
+                bar.innerHTML = `
+                    <div style="flex: ${outageCount}; background: #ef4444;" title="${formatSlotTime(slot)}: ${outageCount} groups OFF"></div>
+                    <div style="flex: ${powerOnCount}; background: #10b981;" title="${formatSlotTime(slot)}: ${powerOnCount} groups ON"></div>
+                `;
+                wrapper.appendChild(bar);
+            });
+            
+            container.appendChild(wrapper);
+            
+            // X-axis labels - single row using flexbox via chart-labels class
+            const isMobile = window.innerWidth <= 1080;
+            const labelInterval = isMobile ? 4 : 2;
+            for (let slot = 0; slot < 48; slot++) {
+                const label = document.createElement('div');
+                label.textContent = slot % labelInterval === 0 ? `${Math.floor(slot/2)}` : '';
+                labels.appendChild(label);
+            }
+            
+            // Add legend below labels (same style as Outages Over Time)
+            const legendContainer = document.getElementById('powerStatusLegend');
+            legendContainer.innerHTML = '<span style="color:#ef4444;">●</span> Power OFF &nbsp;&nbsp; <span style="color:#10b981;">●</span> Power ON';
+        }
+
+        function renderDetailedGrid(groupHourData, groups) {
+            const container = document.getElementById('detailedGrid');
+            const header = document.getElementById('detailedGridHeader');
+            const tooltip = document.getElementById('tooltip');
+            
+            // Build header with time labels
+            const isMobile = window.innerWidth <= 1080;
+            header.innerHTML = '<div></div>';
+            for (let i = 0; i < 48; i++) {
+                const div = document.createElement('div');
+                div.style.cssText = 'text-align: center; font-size: 7px; color: #888;';
+                if (isMobile) {
+                    // On mobile, show only every 2 hours (every 4 slots)
+                    div.textContent = i % 4 === 0 ? `${Math.floor(i/2)}h` : '';
+                } else {
+                    div.textContent = `${Math.floor(i/2)}:${i%2===0?'00':'30'}`;
+                }
+                header.appendChild(div);
+            }
+            
+            groups.sort((a, b) => {
+                const numA = parseFloat(a);
+                const numB = parseFloat(b);
+                return numA - numB;
+            });
+            
+            groups.forEach(groupId => {
+                const row = document.createElement('div');
+                row.style.display = 'grid';
+                row.style.gridTemplateColumns = '50px repeat(48, 1fr)';
+                row.style.gap = '1px';
+                row.style.marginBottom = '1px';
+                
+                const label = document.createElement('div');
+                label.textContent = formatGroupId(groupId, groups);
+                label.style.fontSize = '9px';
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.justifyContent = 'center';
+                label.style.color = '#888';
+                row.appendChild(label);
+                
+                for (let s = 0; s < 48; s++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'group-cell';
+                    const hasOutage = groupHourData[groupId][s];
+                    cell.style.backgroundColor = hasOutage ? '#ef4444' : '#10b981';
+                    
+                    cell.addEventListener('mouseenter', (e) => {
+                        tooltip.style.display = 'block';
+                        tooltip.innerHTML = `<strong>Group ${formatGroupId(groupId, groups)}</strong><br>${formatSlotTime(s)} - ${formatSlotTime(s + 1)}<br>${hasOutage ? '⚠️ Outage' : '✅ Power on'}`;
+                        tooltip.style.left = (e.clientX + 10) + 'px';
+                        tooltip.style.top = (e.clientY + 10) + 'px';
+                    });
+                    
+                    cell.addEventListener('mouseleave', () => {
+                        tooltip.style.display = 'none';
+                    });
+                    
+                    row.appendChild(cell);
+                }
+                
+                container.appendChild(row);
+            });
+        }
+
+        function renderStats(hourlyOutages, totalGroups, groupStats, allGroups) {
+            const container = document.getElementById('stats');
+            const summaryBar = document.getElementById('summaryBar');
+            container.innerHTML = '';
+            summaryBar.innerHTML = '';
+            
+            const maxOutages = Math.max(...hourlyOutages);
+            const minOutages = Math.min(...hourlyOutages);
+            const avgOutages = hourlyOutages.reduce((a, b) => a + b, 0) / 48;
+            
+            // Find worst and best slots (all of them)
+            const worstRanges = findConsecutiveRanges(hourlyOutages, hourlyOutages, v => v === maxOutages);
+            const bestRanges = findConsecutiveRanges(hourlyOutages, hourlyOutages, v => v === minOutages);
+            
+            // Find worst and best groups
+            const groupDurations = Object.entries(groupStats).map(([id, stats]) => ({
+                id,
+                minutes: stats.outageMinutes,
+                powerOnMinutes: 1440 - stats.outageMinutes
+            })).sort((a, b) => b.minutes - a.minutes);
+            
+            const worstDuration = groupDurations[0]?.minutes || 0;
+            const bestDuration = groupDurations[groupDurations.length - 1]?.minutes || 0;
+            
+            const worstGroups = groupDurations.filter(g => g.minutes === worstDuration).slice(0, 5);
+            const bestGroups = groupDurations.filter(g => g.minutes === bestDuration).slice(0, 5);
+            
+            // Summary bar
+            summaryBar.innerHTML = `
+                <div class="summary-item">
+                    <div class="value">${totalGroups}</div>
+                    <div class="label">Total Groups</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${formatDuration(worstDuration)}</div>
+                    <div class="label">Max Outage Duration</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${formatDuration(bestDuration)}</div>
+                    <div class="label">Min Outage Duration</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${formatDuration(Math.round(groupDurations.reduce((a, g) => a + g.minutes, 0) / groupDurations.length))}</div>
+                    <div class="label">Avg Outage Duration</div>
+                </div>
+            `;
+            
+            // Stats cards
+            const cards = [
+                {
+                    title: '🔴 Worst Time Slots',
+                    value: formatRanges(worstRanges),
+                    label: `${maxOutages} groups affected (${Math.round(maxOutages/totalGroups*100)}%)`,
+                    isGood: false
+                },
+                {
+                    title: '🟢 Best Time Slots',
+                    value: formatRanges(bestRanges),
+                    label: `${minOutages} groups affected (${Math.round(minOutages/totalGroups*100)}%)`,
+                    isGood: true
+                },
+                {
+                    title: '😓 Most Affected Groups',
+                    value: formatGroupIds(worstGroups.map(g => g.id), allGroups),
+                    label: `${formatDuration(worstDuration)} without power`,
+                    isGood: false
+                },
+                {
+                    title: '😊 Least Affected Groups',
+                    value: formatGroupIds(bestGroups.map(g => g.id), allGroups),
+                    label: `${formatDuration(bestDuration)} without power`,
+                    isGood: true
+                }
+            ];
+            
+            cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'stat-card';
+                cardEl.innerHTML = `
+                    <h3>${card.title}</h3>
+                    <div class="stat-value ${card.isGood ? 'good' : ''}">${card.value}</div>
+                    <div class="stat-label">${card.label}</div>
+                `;
+                container.appendChild(cardEl);
+            });
+        }
+
+        function clearAllContainers() {
+            document.getElementById('stats').innerHTML = '';
+            document.getElementById('summaryBar').innerHTML = '';
+            document.getElementById('heatmapWrapper').innerHTML = '';
+            document.getElementById('barChart').innerHTML = '<svg width="100%" height="100%" id="lineChart"></svg>';
+            document.getElementById('barLabels').innerHTML = '';
+            document.getElementById('powerStatusChart').innerHTML = '';
+            document.getElementById('powerStatusLabels').innerHTML = '';
+            document.getElementById('detailedGrid').innerHTML = '';
+            document.getElementById('detailedGridHeader').innerHTML = '<div></div>';
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('error').style.display = 'none';
+            document.querySelector('.container').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.querySelector('.container').style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+            document.querySelector('.container').style.display = 'none';
+        }
+
+        function updateSubtitle(data) {
+            const subtitle = document.querySelector('.subtitle');
+            const firstGroup = Object.values(data)[0];
+            if (firstGroup?.today?.date) {
+                const date = new Date(firstGroup.today.date);
+                subtitle.textContent = `Analysis of planned outages by hour (${date.toLocaleDateString('en-US', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                })})`;
+            }
+            
+            // Add last updated info
+            if (firstGroup?.updatedOn) {
+                const updated = new Date(firstGroup.updatedOn);
+                let lastUpdatedDiv = document.querySelector('.last-updated');
+                if (!lastUpdatedDiv) {
+                    lastUpdatedDiv = document.createElement('div');
+                    lastUpdatedDiv.className = 'last-updated';
+                    subtitle.after(lastUpdatedDiv);
+                }
+                lastUpdatedDiv.textContent = `Last updated: ${updated.toLocaleString()}`;
+            }
+        }
+
+        async function fetchData() {
+            showLoading();
+            
+            try {
+                // Use CORS proxy to bypass CORS restrictions
+                const response = await fetch(CORS_PROXY + encodeURIComponent(API_URL), {
+                    headers: {
+                        'Accept': 'application/json, text/plain, */*'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                outageData = await response.json();
+                
+                if (!outageData || Object.keys(outageData).length === 0) {
+                    throw new Error('No outage data received');
+                }
+                
+                hideLoading();
+                clearAllContainers();
+                
+                const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(outageData);
+                updateSubtitle(outageData);
+                renderStats(hourlyOutages, groups.length, groupStats, groups);
+                renderHeatmap(hourlyOutages, groups.length);
+                renderBarChart(hourlyOutages, groups.length);
+                renderPowerStatusChart(hourlyOutages, groups.length);
+                renderDetailedGrid(groupHourData, groups);
+                
+                // Add refresh button if not exists
+                if (!document.querySelector('.refresh-btn')) {
+                    const refreshBtn = document.createElement('button');
+                    refreshBtn.className = 'refresh-btn';
+                    refreshBtn.innerHTML = '🔄 Refresh';
+                    refreshBtn.onclick = fetchData;
+                    document.body.appendChild(refreshBtn);
+                }
+                
+            } catch (error) {
+                console.error('Failed to fetch outage data:', error);
+                showError(error.message);
+            }
+        }
+
+        // Initialize - fetch data on page load
+        fetchData();
+        
+        // Re-render on window resize for mobile responsiveness
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (outageData) {
+                    clearAllContainers();
+                    const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(outageData);
+                    renderStats(hourlyOutages, groups.length, groupStats, groups);
+                    renderHeatmap(hourlyOutages, groups.length);
+                    renderBarChart(hourlyOutages, groups.length);
+                    renderPowerStatusChart(hourlyOutages, groups.length);
+                    renderDetailedGrid(groupHourData, groups);
+                }
+            }, 250);
+        });
+    </script>
+</body>
+</html>
