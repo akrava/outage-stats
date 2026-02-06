@@ -303,6 +303,45 @@
             height: 12px;
             border-radius: 2px;
         }
+        .day-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .day-toggle-group {
+            display: flex;
+            background: #16213e;
+            border-radius: 10px;
+            padding: 4px;
+            gap: 4px;
+        }
+        .day-toggle-btn {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .day-toggle-btn:hover {
+            color: #ccc;
+        }
+        .day-toggle-btn.active {
+            background: #e94560;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(233, 69, 96, 0.4);
+        }
+        .day-toggle-btn .day-date {
+            display: block;
+            font-size: 10px;
+            font-weight: 400;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
         /* Mobile responsive */
         @media (max-width: 1080px) {
             body {
@@ -342,6 +381,13 @@
     <div class="container">
         <h1>⚡ Kyiv Power Outage Heatmap</h1>
         <p class="subtitle">Yasno scheduled outages for Kyiv city</p>
+        
+        <div class="day-toggle">
+            <div class="day-toggle-group">
+                <button class="day-toggle-btn active" data-day="today" id="btnToday">📅 Today<span class="day-date" id="btnTodayDate"></span></button>
+                <button class="day-toggle-btn" data-day="tomorrow" id="btnTomorrow">📅 Tomorrow<span class="day-date" id="btnTomorrowDate"></span></button>
+            </div>
+        </div>
         
         <div class="summary-bar" id="summaryBar"></div>
         
@@ -477,16 +523,18 @@
         document.head.appendChild(style);
         
         let outageData = null;
+        let selectedDay = 'today';
 
         // Parse data and calculate outages per 30-min slot
-        function parseOutages(data) {
+        function parseOutages(data, day) {
+            day = day || selectedDay;
             const groups = Object.keys(data);
             const slotOutages = new Array(48).fill(0); // 48 x 30-min slots
             const groupSlotData = {};
             const groupStats = {}; // Track outage duration per group
             
             groups.forEach(groupId => {
-                const slots = data[groupId].today?.slots || [];
+                const slots = data[groupId][day]?.slots || [];
                 groupSlotData[groupId] = new Array(48).fill(false);
                 groupStats[groupId] = { outageMinutes: 0, outagePeriods: [] };
                 
@@ -971,14 +1019,26 @@
             document.querySelector('.container').style.display = 'none';
         }
 
-        function updateSubtitle(data) {
+        function updateSubtitle(data, day) {
+            day = day || selectedDay;
             const subtitle = document.querySelector('.subtitle');
             const firstGroup = Object.values(data)[0];
-            if (firstGroup?.today?.date) {
-                const date = new Date(firstGroup.today.date);
-                subtitle.textContent = `Analysis of planned outages by hour (${date.toLocaleDateString('en-US', { 
+            const dayLabel = day === 'today' ? 'Today' : 'Tomorrow';
+            if (firstGroup?.[day]?.date) {
+                const date = new Date(firstGroup[day].date);
+                subtitle.textContent = `${dayLabel}'s planned outages (${date.toLocaleDateString('en-US', { 
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                 })})`;
+            }
+            
+            // Populate toggle button dates
+            if (firstGroup?.today?.date) {
+                const todayDate = new Date(firstGroup.today.date);
+                document.getElementById('btnTodayDate').textContent = todayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            if (firstGroup?.tomorrow?.date) {
+                const tomorrowDate = new Date(firstGroup.tomorrow.date);
+                document.getElementById('btnTomorrowDate').textContent = tomorrowDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             }
             
             // Add last updated info
@@ -988,11 +1048,35 @@
                 if (!lastUpdatedDiv) {
                     lastUpdatedDiv = document.createElement('div');
                     lastUpdatedDiv.className = 'last-updated';
-                    subtitle.after(lastUpdatedDiv);
+                    document.querySelector('.day-toggle').after(lastUpdatedDiv);
                 }
                 lastUpdatedDiv.textContent = `Last updated: ${updated.toLocaleString()}`;
             }
         }
+
+        function renderAll(data, day) {
+            clearAllContainers();
+            const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(data, day);
+            updateSubtitle(data, day);
+            renderStats(hourlyOutages, groups.length, groupStats, groups);
+            renderHeatmap(hourlyOutages, groups.length);
+            renderBarChart(hourlyOutages, groups.length);
+            renderPowerStatusChart(hourlyOutages, groups.length);
+            renderDetailedGrid(groupHourData, groups);
+        }
+
+        // Day toggle handling
+        document.querySelectorAll('.day-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.day === selectedDay) return;
+                selectedDay = btn.dataset.day;
+                document.querySelectorAll('.day-toggle-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (outageData) {
+                    renderAll(outageData, selectedDay);
+                }
+            });
+        });
 
         async function fetchData() {
             showLoading();
@@ -1021,15 +1105,7 @@
                     
                     console.log(`Success with ${proxy.name}`);
                     hideLoading();
-                    clearAllContainers();
-                    
-                    const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(outageData);
-                    updateSubtitle(outageData);
-                    renderStats(hourlyOutages, groups.length, groupStats, groups);
-                    renderHeatmap(hourlyOutages, groups.length);
-                    renderBarChart(hourlyOutages, groups.length);
-                    renderPowerStatusChart(hourlyOutages, groups.length);
-                    renderDetailedGrid(groupHourData, groups);
+                    renderAll(outageData, selectedDay);
                     
                     // Add refresh button if not exists
                     if (!document.querySelector('.refresh-btn')) {
@@ -1063,13 +1139,7 @@
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 if (outageData) {
-                    clearAllContainers();
-                    const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(outageData);
-                    renderStats(hourlyOutages, groups.length, groupStats, groups);
-                    renderHeatmap(hourlyOutages, groups.length);
-                    renderBarChart(hourlyOutages, groups.length);
-                    renderPowerStatusChart(hourlyOutages, groups.length);
-                    renderDetailedGrid(groupHourData, groups);
+                    renderAll(outageData, selectedDay);
                 }
             }, 250);
         });
