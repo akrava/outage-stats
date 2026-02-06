@@ -303,6 +303,142 @@
             height: 12px;
             border-radius: 2px;
         }
+        .address-lookup {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .address-lookup .heatmap-title {
+            margin-bottom: 12px;
+        }
+        .address-form {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .address-field {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+        .address-field label {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .address-field input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .address-field input:focus {
+            border-color: #e94560;
+        }
+        .address-field input::placeholder {
+            color: #555;
+        }
+        .address-field input:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .address-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #0f0f23;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 500;
+            display: none;
+        }
+        .address-dropdown.visible {
+            display: block;
+        }
+        .address-dropdown-item {
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #ccc;
+            cursor: pointer;
+            border-bottom: 1px solid #1a1a2e;
+            transition: background 0.15s;
+        }
+        .address-dropdown-item:last-child {
+            border-bottom: none;
+        }
+        .address-dropdown-item:hover,
+        .address-dropdown-item.active {
+            background: #1f2b4a;
+            color: #fff;
+        }
+        .address-dropdown-empty {
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .address-dropdown-loading {
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+        .group-result {
+            display: none;
+            margin-top: 15px;
+            padding: 12px 18px;
+            background: rgba(233, 69, 96, 0.1);
+            border: 1px solid rgba(233, 69, 96, 0.3);
+            border-radius: 8px;
+            text-align: center;
+        }
+        .group-result.visible {
+            display: block;
+        }
+        .group-result .group-number {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .group-result .group-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .group-result .group-schedule {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #ccc;
+        }
+        .group-result .group-schedule-off {
+            color: #ef4444;
+        }
+        .group-result .group-schedule-on {
+            color: #10b981;
+        }
+        .highlight-group {
+            outline: 3px solid #fbbf24 !important;
+            outline-offset: -1px;
+            animation: pulse-highlight 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-highlight {
+            0%, 100% { outline-color: #fbbf24; }
+            50% { outline-color: #f59e0b; }
+        }
         .day-toggle {
             display: flex;
             justify-content: center;
@@ -389,6 +525,27 @@
             </div>
         </div>
         
+        <div class="address-lookup">
+            <div class="heatmap-title">🏠 Find Your Group</div>
+            <div class="address-form">
+                <div class="address-field">
+                    <label>Street</label>
+                    <input type="text" id="streetInput" placeholder="Start typing street name..." autocomplete="off">
+                    <div class="address-dropdown" id="streetDropdown"></div>
+                </div>
+                <div class="address-field">
+                    <label>Building</label>
+                    <input type="text" id="buildingInput" placeholder="Select street first" disabled autocomplete="off">
+                    <div class="address-dropdown" id="buildingDropdown"></div>
+                </div>
+            </div>
+            <div class="group-result" id="groupResult">
+                <div class="group-number" id="groupNumber"></div>
+                <div class="group-label" id="groupLabel"></div>
+                <div class="group-schedule" id="groupSchedule"></div>
+            </div>
+        </div>
+        
         <div class="summary-bar" id="summaryBar"></div>
         
         <div class="stats" id="stats"></div>
@@ -449,10 +606,11 @@
         const API_URL = 'https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/25/dsos/902/planned-outages';
         
         // Multiple CORS proxies to try (fallback chain)
+        // All must return Access-Control-Allow-Origin: * to work from file:// (null origin)
         const CORS_PROXIES = [
-            { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' },
-            { name: 'corsproxy.org', url: 'https://corsproxy.org/?' },
-            { name: 'cors.sh', url: 'https://proxy.cors.sh/' }
+            { name: 'allorigins', url: 'https://api.allorigins.win/get?url=', jsonWrapped: true },
+            { name: 'corsproxy.io', url: 'https://corsproxy.io/?' },
+            { name: 'corsanywhere', url: 'https://api.codetabs.com/v1/proxy?quest=' }
         ];
         
         // Add loading and error styles
@@ -1054,6 +1212,241 @@
             }
         }
 
+        // ---- Address lookup ----
+        const STREETS_API = 'https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/streets';
+        const HOUSES_API = 'https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/houses';
+        const GROUP_API = 'https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/group';
+        const REGION_ID = 25;
+        const DSO_ID = 902;
+
+        let selectedStreet = null;
+        let selectedBuilding = null;
+        let highlightedGroupId = null;
+        let streetDebounce = null;
+        let buildingDebounce = null;
+        let activeDropdownIndex = -1;
+
+        const streetInput = document.getElementById('streetInput');
+        const buildingInput = document.getElementById('buildingInput');
+        const streetDropdown = document.getElementById('streetDropdown');
+        const buildingDropdown = document.getElementById('buildingDropdown');
+        const groupResult = document.getElementById('groupResult');
+
+        async function fetchViaProxy(apiUrl) {
+            for (const proxy of CORS_PROXIES) {
+                try {
+                    const res = await fetch(proxy.url + encodeURIComponent(apiUrl));
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    if (proxy.jsonWrapped) {
+                        const wrapper = await res.json();
+                        return JSON.parse(wrapper.contents);
+                    }
+                    return await res.json();
+                } catch(e) {
+                    continue;
+                }
+            }
+            throw new Error('All proxies failed');
+        }
+
+        function showDropdown(dropdown, items, onSelect, emptyMsg) {
+            activeDropdownIndex = -1;
+            if (!items || items.length === 0) {
+                dropdown.innerHTML = `<div class="address-dropdown-empty">${emptyMsg || 'No results'}</div>`;
+                dropdown.classList.add('visible');
+                return;
+            }
+            dropdown.innerHTML = items.map((item, i) =>
+                `<div class="address-dropdown-item" data-index="${i}">${item.value}</div>`
+            ).join('');
+            dropdown.classList.add('visible');
+            dropdown.querySelectorAll('.address-dropdown-item').forEach((el, i) => {
+                el.addEventListener('click', () => onSelect(items[i]));
+            });
+        }
+
+        function hideDropdown(dropdown) {
+            dropdown.classList.remove('visible');
+            dropdown.innerHTML = '';
+            activeDropdownIndex = -1;
+        }
+
+        function navigateDropdown(dropdown, items, onSelect, direction) {
+            const els = dropdown.querySelectorAll('.address-dropdown-item');
+            if (els.length === 0) return;
+            if (activeDropdownIndex >= 0 && els[activeDropdownIndex]) {
+                els[activeDropdownIndex].classList.remove('active');
+            }
+            activeDropdownIndex += direction;
+            if (activeDropdownIndex < 0) activeDropdownIndex = els.length - 1;
+            if (activeDropdownIndex >= els.length) activeDropdownIndex = 0;
+            els[activeDropdownIndex].classList.add('active');
+            els[activeDropdownIndex].scrollIntoView({ block: 'nearest' });
+        }
+
+        function clearGroupHighlight() {
+            document.querySelectorAll('.highlight-group').forEach(el => el.classList.remove('highlight-group'));
+            highlightedGroupId = null;
+        }
+
+        function applyGroupHighlight() {
+            clearGroupHighlight();
+            if (!highlightedGroupId) return;
+            // Find the row in detailed grid matching this group
+            const grid = document.getElementById('detailedGrid');
+            const rows = grid.children;
+            for (const row of rows) {
+                const label = row.children[0];
+                if (label && label.textContent === highlightedGroupId) {
+                    row.classList.add('highlight-group');
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    break;
+                }
+            }
+        }
+
+        function formatGroupSchedule(groupId, day) {
+            if (!outageData || !outageData[groupId]) return '';
+            const dayData = outageData[groupId][day || selectedDay];
+            if (!dayData?.slots) return '';
+            return dayData.slots.map(s => {
+                const startH = Math.floor(s.start / 60);
+                const startM = s.start % 60;
+                const endH = Math.floor(s.end / 60);
+                const endM = s.end % 60;
+                const from = `${startH}:${String(startM).padStart(2,'0')}`;
+                const to = `${endH}:${String(endM).padStart(2,'0')}`;
+                if (s.type === 'Definite') {
+                    return `<span class="group-schedule-off">⚡ ${from}–${to} OFF</span>`;
+                } else {
+                    return `<span class="group-schedule-on">✅ ${from}–${to} ON</span>`;
+                }
+            }).join(' &nbsp; ');
+        }
+
+        streetInput.addEventListener('input', () => {
+            const q = streetInput.value.trim();
+            selectedStreet = null;
+            selectedBuilding = null;
+            buildingInput.value = '';
+            buildingInput.disabled = true;
+            hideDropdown(buildingDropdown);
+            groupResult.classList.remove('visible');
+            clearGroupHighlight();
+
+            if (q.length < 2) {
+                hideDropdown(streetDropdown);
+                return;
+            }
+            clearTimeout(streetDebounce);
+            streetDropdown.innerHTML = '<div class="address-dropdown-loading">Searching...</div>';
+            streetDropdown.classList.add('visible');
+            streetDebounce = setTimeout(async () => {
+                try {
+                    const url = `${STREETS_API}?regionId=${REGION_ID}&query=${encodeURIComponent(q)}&dsoId=${DSO_ID}`;
+                    const results = await fetchViaProxy(url);
+                    showDropdown(streetDropdown, results, (item) => {
+                        selectedStreet = item;
+                        streetInput.value = item.value;
+                        hideDropdown(streetDropdown);
+                        buildingInput.disabled = false;
+                        buildingInput.placeholder = 'Start typing or browse...';
+                        buildingInput.value = '';
+                        buildingInput.focus();
+                        // Preload buildings
+                        loadBuildings('');
+                    }, 'No streets found');
+                } catch(e) {
+                    streetDropdown.innerHTML = '<div class="address-dropdown-empty">Error loading streets</div>';
+                }
+            }, 300);
+        });
+
+        streetInput.addEventListener('keydown', (e) => {
+            if (!streetDropdown.classList.contains('visible')) return;
+            const items = streetDropdown.querySelectorAll('.address-dropdown-item');
+            if (e.key === 'ArrowDown') { e.preventDefault(); navigateDropdown(streetDropdown, null, null, 1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); navigateDropdown(streetDropdown, null, null, -1); }
+            else if (e.key === 'Enter' && activeDropdownIndex >= 0 && items[activeDropdownIndex]) {
+                e.preventDefault(); items[activeDropdownIndex].click();
+            }
+            else if (e.key === 'Escape') { hideDropdown(streetDropdown); }
+        });
+
+        async function loadBuildings(query) {
+            if (!selectedStreet) return;
+            buildingDropdown.innerHTML = '<div class="address-dropdown-loading">Loading...</div>';
+            buildingDropdown.classList.add('visible');
+            try {
+                const url = `${HOUSES_API}?regionId=${REGION_ID}&streetId=${selectedStreet.id}&query=${encodeURIComponent(query)}&dsoId=${DSO_ID}`;
+                const results = await fetchViaProxy(url);
+                showDropdown(buildingDropdown, results, (item) => {
+                    selectedBuilding = item;
+                    buildingInput.value = item.value;
+                    hideDropdown(buildingDropdown);
+                    lookupGroup();
+                }, 'No buildings found');
+            } catch(e) {
+                buildingDropdown.innerHTML = '<div class="address-dropdown-empty">Error loading buildings</div>';
+            }
+        }
+
+        buildingInput.addEventListener('input', () => {
+            const q = buildingInput.value.trim();
+            selectedBuilding = null;
+            groupResult.classList.remove('visible');
+            clearGroupHighlight();
+            clearTimeout(buildingDebounce);
+            buildingDebounce = setTimeout(() => loadBuildings(q), 250);
+        });
+
+        buildingInput.addEventListener('focus', () => {
+            if (selectedStreet && !selectedBuilding && buildingInput.value.trim().length === 0) {
+                loadBuildings('');
+            }
+        });
+
+        buildingInput.addEventListener('keydown', (e) => {
+            if (!buildingDropdown.classList.contains('visible')) return;
+            const items = buildingDropdown.querySelectorAll('.address-dropdown-item');
+            if (e.key === 'ArrowDown') { e.preventDefault(); navigateDropdown(buildingDropdown, null, null, 1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); navigateDropdown(buildingDropdown, null, null, -1); }
+            else if (e.key === 'Enter' && activeDropdownIndex >= 0 && items[activeDropdownIndex]) {
+                e.preventDefault(); items[activeDropdownIndex].click();
+            }
+            else if (e.key === 'Escape') { hideDropdown(buildingDropdown); }
+        });
+
+        async function lookupGroup() {
+            if (!selectedStreet || !selectedBuilding) return;
+            try {
+                const url = `${GROUP_API}?regionId=${REGION_ID}&streetId=${selectedStreet.id}&houseId=${selectedBuilding.id}&dsoId=${DSO_ID}`;
+                const data = await fetchViaProxy(url);
+                const groupId = `${data.group}.${data.subgroup}`;
+                highlightedGroupId = String(data.group);
+
+                document.getElementById('groupNumber').textContent = `Group ${data.group}.${data.subgroup}`;
+                document.getElementById('groupLabel').textContent = `${selectedStreet.value}, ${selectedBuilding.value}`;
+                document.getElementById('groupSchedule').innerHTML = formatGroupSchedule(groupId, selectedDay);
+                groupResult.classList.add('visible');
+
+                applyGroupHighlight();
+            } catch(e) {
+                document.getElementById('groupNumber').textContent = 'Error';
+                document.getElementById('groupLabel').textContent = 'Could not determine group';
+                document.getElementById('groupSchedule').innerHTML = '';
+                groupResult.classList.add('visible');
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.address-field')) {
+                hideDropdown(streetDropdown);
+                hideDropdown(buildingDropdown);
+            }
+        });
+
         function renderAll(data, day) {
             clearAllContainers();
             const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(data, day);
@@ -1063,6 +1456,14 @@
             renderBarChart(hourlyOutages, groups.length);
             renderPowerStatusChart(hourlyOutages, groups.length);
             renderDetailedGrid(groupHourData, groups);
+            // Re-apply group highlight & schedule after re-render
+            if (highlightedGroupId) {
+                applyGroupHighlight();
+            }
+            if (groupResult.classList.contains('visible') && selectedStreet && selectedBuilding) {
+                const gId = document.getElementById('groupNumber').textContent.replace('Group ', '');
+                document.getElementById('groupSchedule').innerHTML = formatGroupSchedule(gId, day);
+            }
         }
 
         // Day toggle handling
@@ -1097,7 +1498,12 @@
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                     
-                    outageData = await response.json();
+                    if (proxy.jsonWrapped) {
+                        const wrapper = await response.json();
+                        outageData = JSON.parse(wrapper.contents);
+                    } else {
+                        outageData = await response.json();
+                    }
                     
                     if (!outageData || Object.keys(outageData).length === 0) {
                         throw new Error('No outage data received');
