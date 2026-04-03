@@ -116,6 +116,15 @@
             margin-top: 5px;
             font-size: 12px;
         }
+        .stat-more {
+            font-size: 0.65em;
+            color: #666;
+            cursor: default;
+            border-bottom: 1px dashed #555;
+        }
+        .stat-more:hover {
+            color: #aaa;
+        }
         .stat-list {
             font-size: 13px;
             color: #ccc;
@@ -123,6 +132,92 @@
         .stat-list li {
             margin: 4px 0;
             list-style: none;
+        }
+        .ranking-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: background 0.15s;
+        }
+        .ranking-row:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .ranking-rank {
+            width: 32px;
+            text-align: center;
+            font-weight: bold;
+            color: #888;
+            flex-shrink: 0;
+        }
+        .ranking-row.top .ranking-rank {
+            color: #e94560;
+        }
+        .ranking-row.bottom .ranking-rank {
+            color: #10b981;
+        }
+        .ranking-group {
+            width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .ranking-bar-wrap {
+            flex: 1;
+            height: 14px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .ranking-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+        .ranking-duration {
+            width: 55px;
+            text-align: center;
+            color: #ccc;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .ranking-periods {
+            width: 140px;
+            color: #888;
+            font-size: 12px;
+            flex-shrink: 0;
+            text-align: center;
+            text-align: right;
+        }
+        @media (max-width: 600px) {
+            .ranking-periods { display: none; }
+            .ranking-group { width: 36px; }
+            .ranking-duration { width: 45px; }
+        }
+        .ranking-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .ranking-chip {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            padding: 5px 0;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .ranking-chip .chip-duration {
+            font-weight: normal;
+            font-size: 11px;
+            opacity: 0.7;
         }
         .summary-bar {
             background: #16213e;
@@ -405,9 +500,55 @@
             border: 1px solid rgba(233, 69, 96, 0.3);
             border-radius: 8px;
             text-align: center;
+            position: relative;
         }
         .group-result.visible {
             display: block;
+        }
+        .group-result-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+        }
+        .group-action-btn {
+            width: 26px;
+            height: 26px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            color: #888;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+        .group-action-btn:hover {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+        .group-action-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        .btn-show-saved {
+            display: block;
+            margin: 8px auto 0;
+            padding: 4px 12px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.06);
+            color: #666;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-show-saved:hover {
+            background: rgba(255,255,255,0.12);
+            color: #aaa;
         }
         .group-result .group-number {
             font-size: 1.6em;
@@ -420,20 +561,111 @@
             margin-top: 4px;
         }
         .group-result .group-schedule {
+            margin-top: 12px;
+        }
+        .mini-timeline {
+            position: relative;
+            height: 22px;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            background: #1a1a2e;
+        }
+        .mini-timeline-seg {
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.8);
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .mini-timeline-seg.off {
+            background: repeating-linear-gradient(
+                -45deg,
+                #dc2626,
+                #dc2626 3px,
+                #b91c1c 3px,
+                #b91c1c 6px
+            );
+        }
+        .mini-timeline-seg.on {
+            background: #166534;
+        }
+        .mini-timeline-ticks {
+            position: relative;
+            height: 10px;
+            margin-top: 2px;
+        }
+        .mini-timeline-tick {
+            position: absolute;
+            top: 0;
+            font-size: 9px;
+            color: #666;
+            transform: translateX(-50%);
+        }
+        .mini-timeline-now {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 22px;
+            background: #fbbf24;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .mini-timeline-now::before {
+            content: '▼';
+            position: absolute;
+            top: -11px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: #fbbf24;
+        }
+        .mini-timeline-summary {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #888;
+        }
+        .mini-timeline-summary .off-text { color: #ef4444; }
+        .mini-timeline-summary .on-text { color: #10b981; }
+        .group-result .group-percentile {
             margin-top: 10px;
             font-size: 13px;
             color: #ccc;
+            line-height: 1.5;
         }
-        .group-result .group-schedule-off {
-            color: #ef4444;
+        .group-result .group-percentile .percentile-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 4px;
         }
-        .group-result .group-schedule-on {
-            color: #10b981;
+        .group-result .group-percentile .percentile-comment {
+            font-size: 12px;
+            color: #888;
+            font-style: italic;
+        }
+        .group-result .group-percentile .percentile-comment .emoji {
+            font-style: normal;
         }
         .highlight-group {
             outline: 3px solid #fbbf24 !important;
             outline-offset: -1px;
             animation: pulse-highlight 1.5s ease-in-out infinite;
+        }
+        .ranking-row.highlight-group {
+            background: rgba(251, 191, 36, 0.15) !important;
+            outline-offset: -2px;
+        }
+        .ranking-chip.highlight-group {
+            outline-offset: 2px;
+            transform: scale(1.1);
         }
         @keyframes pulse-highlight {
             0%, 100% { outline-color: #fbbf24; }
@@ -524,6 +756,8 @@
                 <button class="day-toggle-btn" data-day="tomorrow" id="btnTomorrow">📅 Tomorrow<span class="day-date" id="btnTomorrowDate"></span></button>
             </div>
         </div>
+
+        <div class="status-banner" id="statusBanner" style="display: none;"></div>
         
         <div class="address-lookup">
             <div class="heatmap-title">🏠 Find Your Group</div>
@@ -540,16 +774,22 @@
                 </div>
             </div>
             <div class="group-result" id="groupResult">
+                <div class="group-result-actions">
+                    <button class="group-action-btn" id="btnHideGroup" title="Hide">✕</button>
+                    <button class="group-action-btn danger" id="btnClearGroup" title="Forget saved group">🗑</button>
+                </div>
                 <div class="group-number" id="groupNumber"></div>
                 <div class="group-label" id="groupLabel"></div>
                 <div class="group-schedule" id="groupSchedule"></div>
+                <div class="group-percentile" id="groupPercentile"></div>
             </div>
+            <button class="btn-show-saved" id="btnShowSaved" style="display:none;">📌 Show saved group</button>
         </div>
         
         <div class="summary-bar" id="summaryBar"></div>
         
         <div class="stats" id="stats"></div>
-        
+
         <div class="heatmap-container">
             <div class="heatmap-title">📊 Outage Intensity by 30-min Slot (% of groups affected)</div>
             <div id="heatmapWrapper"></div>
@@ -587,6 +827,16 @@
                 <div id="detailedGrid" style="min-width: 800px;"></div>
             </div>
         </div>
+
+        <div class="heatmap-container">
+            <div class="heatmap-title">🏆 Group Ranking by Outage Duration</div>
+            <div id="groupRanking"></div>
+        </div>
+
+        <div class="heatmap-container">
+            <div class="heatmap-title">📋 Groups Worst → Best</div>
+            <div class="ranking-list" id="groupRankingList"></div>
+        </div>
     </div>
     
     <div class="tooltip" id="tooltip"></div>
@@ -608,9 +858,9 @@
         // Multiple CORS proxies to try (fallback chain)
         // All must return Access-Control-Allow-Origin: * to work from file:// (null origin)
         const CORS_PROXIES = [
-            { name: 'allorigins', url: 'https://api.allorigins.win/get?url=', jsonWrapped: true },
             { name: 'corsproxy.io', url: 'https://corsproxy.io/?' },
-            { name: 'corsanywhere', url: 'https://api.codetabs.com/v1/proxy?quest=' }
+            { name: 'codetabs', url: 'https://api.codetabs.com/v1/proxy?quest=' },
+            { name: 'allorigins', url: 'https://api.allorigins.win/get?url=', jsonWrapped: true }
         ];
         
         // Add loading and error styles
@@ -653,6 +903,39 @@
             }
             .error button:hover {
                 background: #d63050;
+            }
+            .status-banner {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                border-radius: 10px;
+                padding: 16px 20px;
+                margin: 15px 0;
+                font-size: 15px;
+                line-height: 1.5;
+            }
+            .status-banner.emergency {
+                background: linear-gradient(135deg, #7f1d1d, #991b1b);
+                border: 1px solid #dc2626;
+                color: #fecaca;
+            }
+            .status-banner.waiting {
+                background: linear-gradient(135deg, #1e3a5f, #1e40af);
+                border: 1px solid #3b82f6;
+                color: #bfdbfe;
+            }
+            .status-banner .banner-icon {
+                font-size: 28px;
+                flex-shrink: 0;
+            }
+            .status-banner a {
+                color: inherit;
+                opacity: 0.85;
+                text-decoration: underline;
+            }
+            .status-banner a:hover {
+                opacity: 1;
+                color: #fff;
             }
             .refresh-btn {
                 position: fixed;
@@ -751,6 +1034,13 @@
                 }
                 return `${formatSlotTime(r.start)}-${formatSlotTime(r.end + 1)}`;
             }).join(', ');
+        }
+
+        function formatWithOverflow(visibleText, allItems, formatFn) {
+            if (allItems.length <= 5) return visibleText;
+            const extra = allItems.length - 5;
+            const allText = formatFn(allItems);
+            return `${visibleText} <span class="stat-more" title="${allText}">+${extra} more</span>`;
         }
 
         function formatDuration(minutes) {
@@ -1084,8 +1374,10 @@
             const worstDuration = groupDurations[0]?.minutes || 0;
             const bestDuration = groupDurations[groupDurations.length - 1]?.minutes || 0;
             
-            const worstGroups = groupDurations.filter(g => g.minutes === worstDuration).slice(0, 5);
-            const bestGroups = groupDurations.filter(g => g.minutes === bestDuration).slice(0, 5);
+            const allWorstGroups = groupDurations.filter(g => g.minutes === worstDuration);
+            const allBestGroups = groupDurations.filter(g => g.minutes === bestDuration);
+            const worstGroups = allWorstGroups.slice(0, 5);
+            const bestGroups = allBestGroups.slice(0, 5);
             
             // Summary bar
             summaryBar.innerHTML = `
@@ -1111,25 +1403,41 @@
             const cards = [
                 {
                     title: '🔴 Worst Time Slots',
-                    value: formatRanges(worstRanges),
+                    value: formatWithOverflow(
+                        formatRanges(worstRanges.slice(0, 5)),
+                        worstRanges,
+                        r => formatRanges(r)
+                    ),
                     label: `${maxOutages} groups affected (${Math.round(maxOutages/totalGroups*100)}%)`,
                     isGood: false
                 },
                 {
                     title: '🟢 Best Time Slots',
-                    value: formatRanges(bestRanges),
+                    value: formatWithOverflow(
+                        formatRanges(bestRanges.slice(0, 5)),
+                        bestRanges,
+                        r => formatRanges(r)
+                    ),
                     label: `${minOutages} groups affected (${Math.round(minOutages/totalGroups*100)}%)`,
                     isGood: true
                 },
                 {
                     title: '😓 Most Affected Groups',
-                    value: formatGroupIds(worstGroups.map(g => g.id), allGroups),
+                    value: formatWithOverflow(
+                        formatGroupIds(worstGroups.map(g => g.id), allGroups),
+                        allWorstGroups,
+                        items => formatGroupIds(items.map(g => g.id), allGroups)
+                    ),
                     label: `${formatDuration(worstDuration)} without power`,
                     isGood: false
                 },
                 {
                     title: '😊 Least Affected Groups',
-                    value: formatGroupIds(bestGroups.map(g => g.id), allGroups),
+                    value: formatWithOverflow(
+                        formatGroupIds(bestGroups.map(g => g.id), allGroups),
+                        allBestGroups,
+                        items => formatGroupIds(items.map(g => g.id), allGroups)
+                    ),
                     label: `${formatDuration(bestDuration)} without power`,
                     isGood: true
                 }
@@ -1147,9 +1455,92 @@
             });
         }
 
+        function renderGroupRanking(groupStats, allGroups) {
+            const container = document.getElementById('groupRanking');
+            container.innerHTML = '';
+
+            const sorted = Object.entries(groupStats)
+                .map(([id, s]) => ({ id, minutes: s.outageMinutes, periods: s.outagePeriods }))
+                .sort((a, b) => b.minutes - a.minutes);
+
+            const maxMin = sorted[0]?.minutes || 1;
+
+            // Pre-compute colors by unique duration so groups with same duration share the same color
+            const uniqueDurations = [...new Set(sorted.map(g => g.minutes))]; // already sorted desc
+            const colorMap = {};
+            uniqueDurations.forEach((dur, i) => {
+                const t = uniqueDurations.length > 1 ? i / (uniqueDurations.length - 1) : 1;
+                colorMap[dur] = dur === 0 ? '#10b981'
+                    : t < 0.5
+                        ? `rgb(${Math.round(239 + (234-239)*t*2)},${Math.round(68 + (179-68)*t*2)},${Math.round(68 + (8-68)*t*2)})`
+                        : `rgb(${Math.round(234 + (16-234)*(t-0.5)*2)},${Math.round(179 + (185-179)*(t-0.5)*2)},${Math.round(8 + (129-8)*(t-0.5)*2)})`;
+            });
+
+            // Assign ranks by duration, then sort by group number for display
+            const ranked = sorted.map((g, i) => ({ ...g, rank: i + 1 }));
+            ranked.sort((a, b) => parseFloat(a.id) - parseFloat(b.id));
+
+            ranked.forEach((g) => {
+                const barPct = maxMin > 0 ? Math.round((g.minutes / maxMin) * 100) : 0;
+                const isTop = g.rank <= 3;
+                const isBottom = g.rank > ranked.length - 3;
+                const periodsStr = g.periods.map(p => {
+                    const sh = Math.floor(p.start / 60), sm = p.start % 60;
+                    const eh = Math.floor(p.end / 60), em = p.end % 60;
+                    return `${sh}:${String(sm).padStart(2,'0')}–${eh}:${String(em).padStart(2,'0')}`;
+                }).join(', ') || 'No outages';
+
+                const color = colorMap[g.minutes];
+
+                const row = document.createElement('div');
+                row.className = 'ranking-row' + (isTop ? ' top' : '') + (isBottom && !isTop ? ' bottom' : '');
+                row.dataset.group = g.id.split('.')[0];
+                row.innerHTML = `
+                    <div class="ranking-rank">#${g.rank}</div>
+                    <div class="ranking-group">${formatGroupId(g.id, allGroups)}</div>
+                    <div class="ranking-bar-wrap">
+                        <div class="ranking-bar" style="width:${barPct}%;background:${color};"></div>
+                    </div>
+                    <div class="ranking-duration">${formatDuration(g.minutes)}</div>
+                    <div class="ranking-periods">${periodsStr}</div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function renderGroupRankingList(groupStats, allGroups) {
+            const container = document.getElementById('groupRankingList');
+            container.innerHTML = '';
+
+            const sorted = Object.entries(groupStats)
+                .map(([id, s]) => ({ id, minutes: s.outageMinutes }))
+                .sort((a, b) => b.minutes - a.minutes);
+
+            const uniqueDurations = [...new Set(sorted.map(g => g.minutes))];
+            const colorMap = {};
+            uniqueDurations.forEach((dur, i) => {
+                const t = uniqueDurations.length > 1 ? i / (uniqueDurations.length - 1) : 1;
+                colorMap[dur] = dur === 0 ? '#10b981'
+                    : t < 0.5
+                        ? `rgb(${Math.round(239 + (234-239)*t*2)},${Math.round(68 + (179-68)*t*2)},${Math.round(68 + (8-68)*t*2)})`
+                        : `rgb(${Math.round(234 + (16-234)*(t-0.5)*2)},${Math.round(179 + (185-179)*(t-0.5)*2)},${Math.round(8 + (129-8)*(t-0.5)*2)})`;
+            });
+
+            sorted.forEach(g => {
+                const chip = document.createElement('span');
+                chip.className = 'ranking-chip';
+                chip.dataset.group = g.id.split('.')[0];
+                chip.style.background = colorMap[g.minutes];
+                chip.innerHTML = `${formatGroupId(g.id, allGroups)} <span class="chip-duration">${formatDuration(g.minutes)}</span>`;
+                container.appendChild(chip);
+            });
+        }
+
         function clearAllContainers() {
             document.getElementById('stats').innerHTML = '';
             document.getElementById('summaryBar').innerHTML = '';
+            document.getElementById('groupRanking').innerHTML = '';
+            document.getElementById('groupRankingList').innerHTML = '';
             document.getElementById('heatmapWrapper').innerHTML = '';
             document.getElementById('barChart').innerHTML = '<svg width="100%" height="100%" id="lineChart"></svg>';
             document.getElementById('barLabels').innerHTML = '';
@@ -1287,15 +1678,16 @@
         function clearGroupHighlight() {
             document.querySelectorAll('.highlight-group').forEach(el => el.classList.remove('highlight-group'));
             highlightedGroupId = null;
+            document.getElementById('groupPercentile').innerHTML = '';
         }
 
         function applyGroupHighlight() {
-            clearGroupHighlight();
+            document.querySelectorAll('.highlight-group').forEach(el => el.classList.remove('highlight-group'));
             if (!highlightedGroupId) return;
-            // Find the row in detailed grid matching this group
+
+            // Detailed grid
             const grid = document.getElementById('detailedGrid');
-            const rows = grid.children;
-            for (const row of rows) {
+            for (const row of grid.children) {
                 const label = row.children[0];
                 if (label && label.textContent === highlightedGroupId) {
                     row.classList.add('highlight-group');
@@ -1303,25 +1695,116 @@
                     break;
                 }
             }
+
+            // Ranking rows & chips
+            document.querySelectorAll('.ranking-row[data-group], .ranking-chip[data-group]').forEach(el => {
+                if (el.dataset.group === highlightedGroupId) {
+                    el.classList.add('highlight-group');
+                }
+            });
+
+            // Percentile info
+            updateGroupPercentile(highlightedGroupId);
+        }
+
+        function updateGroupPercentile(groupId) {
+            const el = document.getElementById('groupPercentile');
+            if (!outageData) { el.innerHTML = ''; return; }
+
+            const fullId = Object.keys(outageData).find(k => k.split('.')[0] === groupId);
+            if (!fullId) { el.innerHTML = ''; return; }
+
+            const myMinutes = outageData[fullId]?.[selectedDay]?.slots
+                ?.filter(s => s.type === 'Definite')
+                .reduce((sum, s) => sum + (s.end - s.start), 0) || 0;
+
+            const allDurations = Object.values(outageData).map(g =>
+                g[selectedDay]?.slots?.filter(s => s.type === 'Definite')
+                    .reduce((sum, s) => sum + (s.end - s.start), 0) || 0
+            );
+            const totalGroups = allDurations.length;
+            const betterThan = allDurations.filter(d => d > myMinutes).length;
+            const percentile = Math.round((betterThan / totalGroups) * 100);
+            const rank = allDurations.filter(d => d >= myMinutes).length - allDurations.filter(d => d === myMinutes).length + 1;
+            const worstDuration = Math.max(...allDurations);
+
+            let badgeColor, comment;
+            if (myMinutes === 0) {
+                badgeColor = '#10b981';
+                comment = '<span class="emoji">🎉</span> No outages today! Living the dream!';
+            } else if (percentile >= 80) {
+                badgeColor = '#10b981';
+                comment = '<span class="emoji">😎</span> Lucky you! Most groups have it way worse.';
+            } else if (percentile >= 50) {
+                badgeColor = '#84cc16';
+                comment = '<span class="emoji">🙂</span> Not too bad, could be worse!';
+            } else if (percentile >= 20) {
+                badgeColor = '#eab308';
+                comment = '<span class="emoji">😬</span> Hang in there... charge your stuff while you can.';
+            } else if (myMinutes >= worstDuration) {
+                badgeColor = '#ef4444';
+                comment = '<span class="emoji">💀</span> F in the chat. Maximum darkness achieved.';
+            } else {
+                badgeColor = '#f97316';
+                comment = '<span class="emoji">😩</span> Pretty rough. Candles are your friend today.';
+            }
+
+            el.innerHTML = `
+                <span class="percentile-badge" style="background:${badgeColor};color:#fff;">
+                    Better than ${percentile}% of groups
+                </span>
+                <br>
+                <span class="percentile-comment">${comment}</span>
+            `;
         }
 
         function formatGroupSchedule(groupId, day) {
             if (!outageData || !outageData[groupId]) return '';
             const dayData = outageData[groupId][day || selectedDay];
-            if (!dayData?.slots) return '';
-            return dayData.slots.map(s => {
-                const startH = Math.floor(s.start / 60);
-                const startM = s.start % 60;
-                const endH = Math.floor(s.end / 60);
-                const endM = s.end % 60;
-                const from = `${startH}:${String(startM).padStart(2,'0')}`;
-                const to = `${endH}:${String(endM).padStart(2,'0')}`;
-                if (s.type === 'Definite') {
-                    return `<span class="group-schedule-off">⚡ ${from}–${to} OFF</span>`;
-                } else {
-                    return `<span class="group-schedule-on">✅ ${from}–${to} ON</span>`;
-                }
-            }).join(' &nbsp; ');
+            if (!dayData?.slots || dayData.slots.length === 0) return '';
+
+            const fmt = (m) => `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}`;
+
+            // Build segments
+            const segments = dayData.slots.map(s => {
+                const pct = ((s.end - s.start) / 1440 * 100).toFixed(2);
+                const isOff = s.type === 'Definite';
+                const label = (s.end - s.start) >= 90 ? `${fmt(s.start)}–${fmt(s.end)}` : '';
+                return `<div class="mini-timeline-seg ${isOff ? 'off' : 'on'}" style="width:${pct}%" title="${fmt(s.start)}–${fmt(s.end)} ${isOff ? 'OFF' : 'ON'}">${label}</div>`;
+            }).join('');
+
+            // Now marker (only for today)
+            let nowMarker = '';
+            if ((day || selectedDay) === 'today') {
+                const now = new Date();
+                const nowMin = now.getHours() * 60 + now.getMinutes();
+                const nowPct = (nowMin / 1440 * 100).toFixed(2);
+                nowMarker = `<div class="mini-timeline-now" style="left:${nowPct}%"></div>`;
+            }
+
+            // Hour ticks (every 3h)
+            let ticks = '';
+            for (let h = 0; h <= 24; h += 3) {
+                const pct = (h / 24 * 100).toFixed(2);
+                ticks += `<span class="mini-timeline-tick" style="left:${pct}%">${h}</span>`;
+            }
+
+            // Summary text
+            const offSlots = dayData.slots.filter(s => s.type === 'Definite');
+            const totalOff = offSlots.reduce((sum, s) => sum + (s.end - s.start), 0);
+            const summaryParts = offSlots.map(s => `<span class="off-text">⚡${fmt(s.start)}–${fmt(s.end)}</span>`);
+            const summary = totalOff > 0
+                ? `${summaryParts.join(', ')} <span class="off-text">(${formatDuration(totalOff)} off)</span>`
+                : '<span class="on-text">✅ Power on all day</span>';
+
+            return `
+                <div style="position:relative;">
+                    ${nowMarker}
+                    <div class="mini-timeline">${segments}</div>
+                    <div class="mini-timeline-ticks">${ticks}</div>
+                </div>
+                <div class="mini-timeline-summary">${summary}</div>
+            `;
         }
 
         streetInput.addEventListener('input', () => {
@@ -1417,20 +1900,77 @@
             else if (e.key === 'Escape') { hideDropdown(buildingDropdown); }
         });
 
+        function showSavedGroup(saved) {
+            const groupId = `${saved.group}.${saved.subgroup}`;
+            highlightedGroupId = String(saved.group);
+            document.getElementById('groupNumber').textContent = `Group ${saved.group}.${saved.subgroup}`;
+            document.getElementById('groupLabel').textContent = saved.label;
+            document.getElementById('groupSchedule').innerHTML = formatGroupSchedule(groupId, selectedDay);
+            groupResult.classList.add('visible');
+            applyGroupHighlight();
+            if (typeof updateShowSavedBtn === 'function') updateShowSavedBtn();
+        }
+
+        function saveGroupToStorage(data) {
+            localStorage.setItem('savedGroup', JSON.stringify(data));
+            localStorage.removeItem('groupCardHidden');
+        }
+
+        const btnShowSaved = document.getElementById('btnShowSaved');
+
+        function updateShowSavedBtn() {
+            const hasSaved = !!localStorage.getItem('savedGroup');
+            const cardVisible = groupResult.classList.contains('visible');
+            btnShowSaved.style.display = hasSaved && !cardVisible ? 'block' : 'none';
+        }
+
+        function clearSavedGroup() {
+            localStorage.removeItem('savedGroup');
+            localStorage.removeItem('groupCardHidden');
+            groupResult.classList.remove('visible');
+            clearGroupHighlight();
+            streetInput.value = '';
+            buildingInput.value = '';
+            buildingInput.disabled = true;
+            selectedStreet = null;
+            selectedBuilding = null;
+            updateShowSavedBtn();
+        }
+
+        function hideGroupCard() {
+            groupResult.classList.remove('visible');
+            clearGroupHighlight();
+            localStorage.setItem('groupCardHidden', 'true');
+            updateShowSavedBtn();
+        }
+
+        function restoreSavedGroup() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('savedGroup'));
+                if (saved && outageData) {
+                    localStorage.removeItem('groupCardHidden');
+                    showSavedGroup(saved);
+                    updateShowSavedBtn();
+                }
+            } catch(e) {}
+        }
+
+        document.getElementById('btnHideGroup').addEventListener('click', hideGroupCard);
+        document.getElementById('btnClearGroup').addEventListener('click', clearSavedGroup);
+        btnShowSaved.addEventListener('click', restoreSavedGroup);
+
         async function lookupGroup() {
             if (!selectedStreet || !selectedBuilding) return;
             try {
                 const url = `${GROUP_API}?regionId=${REGION_ID}&streetId=${selectedStreet.id}&houseId=${selectedBuilding.id}&dsoId=${DSO_ID}`;
                 const data = await fetchViaProxy(url);
-                const groupId = `${data.group}.${data.subgroup}`;
-                highlightedGroupId = String(data.group);
-
-                document.getElementById('groupNumber').textContent = `Group ${data.group}.${data.subgroup}`;
-                document.getElementById('groupLabel').textContent = `${selectedStreet.value}, ${selectedBuilding.value}`;
-                document.getElementById('groupSchedule').innerHTML = formatGroupSchedule(groupId, selectedDay);
-                groupResult.classList.add('visible');
-
-                applyGroupHighlight();
+                const saved = {
+                    group: data.group,
+                    subgroup: data.subgroup,
+                    label: `${selectedStreet.value}, ${selectedBuilding.value}`
+                };
+                saveGroupToStorage(saved);
+                showSavedGroup(saved);
             } catch(e) {
                 document.getElementById('groupNumber').textContent = 'Error';
                 document.getElementById('groupLabel').textContent = 'Could not determine group';
@@ -1447,11 +1987,42 @@
             }
         });
 
+        function updateStatusBanner(data, day) {
+            const banner = document.getElementById('statusBanner');
+            // Collect all unique statuses for the selected day
+            const statuses = new Set(Object.values(data).map(g => g[day]?.status).filter(Boolean));
+
+            if (statuses.has('EmergencyShutdowns')) {
+                banner.className = 'status-banner emergency';
+                banner.innerHTML = `
+                    <span class="banner-icon">⚠️</span>
+                    <div>
+                        <strong>Emergency shutdowns are in effect.</strong>
+                        Scheduled outage data is unavailable. Check <a href="https://yasno.com.ua" target="_blank">yasno.com.ua</a> for updates.
+                    </div>`;
+                banner.style.display = 'flex';
+            } else if (statuses.size === 1 && statuses.has('WaitingForSchedule')) {
+                banner.className = 'status-banner waiting';
+                banner.innerHTML = `
+                    <span class="banner-icon">🕐</span>
+                    <div>
+                        <strong>Schedule not yet available.</strong>
+                        The outage schedule for this day hasn't been published yet. It usually appears a few hours before.
+                    </div>`;
+                banner.style.display = 'flex';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
         function renderAll(data, day) {
             clearAllContainers();
+            updateStatusBanner(data, day);
             const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(data, day);
             updateSubtitle(data, day);
             renderStats(hourlyOutages, groups.length, groupStats, groups);
+            renderGroupRanking(groupStats, groups);
+            renderGroupRankingList(groupStats, groups);
             renderHeatmap(hourlyOutages, groups.length);
             renderBarChart(hourlyOutages, groups.length);
             renderPowerStatusChart(hourlyOutages, groups.length);
@@ -1460,9 +2031,11 @@
             if (highlightedGroupId) {
                 applyGroupHighlight();
             }
-            if (groupResult.classList.contains('visible') && selectedStreet && selectedBuilding) {
-                const gId = document.getElementById('groupNumber').textContent.replace('Group ', '');
-                document.getElementById('groupSchedule').innerHTML = formatGroupSchedule(gId, day);
+            if (groupResult.classList.contains('visible')) {
+                const gText = document.getElementById('groupNumber').textContent.replace('Group ', '');
+                if (gText && gText !== 'Error') {
+                    document.getElementById('groupSchedule').innerHTML = formatGroupSchedule(gText, day);
+                }
             }
         }
 
@@ -1512,7 +2085,16 @@
                     console.log(`Success with ${proxy.name}`);
                     hideLoading();
                     renderAll(outageData, selectedDay);
-                    
+
+                    // Restore saved group from localStorage
+                    try {
+                        const saved = JSON.parse(localStorage.getItem('savedGroup'));
+                        if (saved && !localStorage.getItem('groupCardHidden')) {
+                            showSavedGroup(saved);
+                        }
+                        updateShowSavedBtn();
+                    } catch(e) {}
+
                     // Add refresh button if not exists
                     if (!document.querySelector('.refresh-btn')) {
                         const refreshBtn = document.createElement('button');
