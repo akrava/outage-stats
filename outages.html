@@ -125,6 +125,20 @@
         .stat-more:hover {
             color: #aaa;
         }
+        .stat-more-slots {
+            display: block;
+            text-align: right;
+            font-size: 0.55em;
+            color: #666;
+            cursor: default;
+            border-bottom: 1px dashed #555;
+            display: inline;
+            float: right;
+            margin-top: 6px;
+        }
+        .stat-more-slots:hover {
+            color: #aaa;
+        }
         .stat-list {
             font-size: 13px;
             color: #ccc;
@@ -158,24 +172,49 @@
         .ranking-row.bottom .ranking-rank {
             color: #10b981;
         }
-        .ranking-group {
-            width: 50px;
-            text-align: center;
-            font-weight: bold;
-            color: #fff;
-            flex-shrink: 0;
-        }
         .ranking-bar-wrap {
             flex: 1;
-            height: 14px;
+            min-height: 24px;
+            min-width: 0;
             background: rgba(255,255,255,0.05);
-            border-radius: 4px;
-            overflow: hidden;
+            border-radius: 6px;
+            position: relative;
         }
         .ranking-bar {
             height: 100%;
-            border-radius: 4px;
+            border-radius: 6px;
             transition: width 0.4s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            min-height: 24px;
+            overflow: hidden;
+        }
+        .ranking-bar-groups {
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            color: #fff;
+            max-width: 100%;
+        }
+        .ranking-bar-overflow {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            line-height: 24px;
+            display: none;
+            padding: 0 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            pointer-events: none;
+            box-sizing: border-box;
         }
         .ranking-duration {
             width: 55px;
@@ -184,22 +223,80 @@
             font-size: 13px;
             flex-shrink: 0;
         }
-        .ranking-periods {
-            width: 140px;
+        .detailed-grid-wrap {
+            position: relative;
+        }
+        .detailed-grid-wrap .scroll-shadow-right {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            pointer-events: none;
+            background: linear-gradient(to left, rgba(22,33,62,0.95), transparent);
+            z-index: 4;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .detailed-grid-wrap.has-scroll-right .scroll-shadow-right {
+            opacity: 1;
+        }
+        .detailed-grid-scroll {
+            overflow-x: auto;
+            position: relative;
+        }
+        .grid-sticky-label {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            background: #16213e;
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #888;
-            font-size: 12px;
-            flex-shrink: 0;
-            text-align: center;
-            text-align: right;
+        }
+        .detailed-grid-scroll.no-overflow .grid-sticky-label {
+            background: transparent;
+        }
+        .grid-sticky-label::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -20px;
+            width: 20px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(0,0,0,0.5), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        .detailed-grid-scroll.scrolled .grid-sticky-label::after {
+            opacity: 1;
         }
         @media (max-width: 600px) {
-            .ranking-periods { display: none; }
-            .ranking-group { width: 36px; }
             .ranking-duration { width: 45px; }
+            .container {
+                padding-bottom: 40px;
+            }
+            .refresh-btn {
+                top: auto !important;
+                bottom: 16px !important;
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%);
+                padding: 12px 32px !important;
+                border-radius: 24px !important;
+                font-size: 15px !important;
+                background: #1a1a2e !important;
+                border: 1px solid #333 !important;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            }
         }
         .ranking-list {
             display: flex;
             flex-wrap: wrap;
+            justify-content: center;
             gap: 6px;
         }
         .ranking-chip {
@@ -237,6 +334,9 @@
             font-weight: bold;
             color: #e94560;
         }
+        .summary-item .value.good {
+            color: #10b981;
+        }
         .summary-item .label {
             font-size: 11px;
             color: #888;
@@ -272,7 +372,7 @@
         }
         .bar-chart {
             position: relative;
-            height: 200px;
+            height: 240px;
             padding: 10px 10px 10px 0;
         }
         .chart-grid {
@@ -341,7 +441,7 @@
             display: grid;
             grid-template-columns: repeat(48, 1fr);
             gap: 2px;
-            text-align: left;
+            text-align: center;
             font-size: 8px;
             color: #888;
             margin-top: 5px;
@@ -353,8 +453,9 @@
             justify-content: space-between;
         }
         .hour-labels.chart-labels div {
-            flex: 1;
+            flex: 0 0 auto;
             min-width: 0;
+            text-align: center;
         }
         .hour-labels.power-status-labels {
             margin-left: 0;
@@ -365,6 +466,7 @@
         .hour-labels.power-status-labels div {
             flex: 1;
             min-width: 0;
+            text-align: center;
         }
         .chart-legend {
             display: flex;
@@ -657,7 +759,7 @@
         .highlight-group {
             outline: 3px solid #fbbf24 !important;
             outline-offset: -1px;
-            animation: pulse-highlight 1.5s ease-in-out infinite;
+            border-radius: 3px;
         }
         .ranking-row.highlight-group {
             background: rgba(251, 191, 36, 0.15) !important;
@@ -666,10 +768,7 @@
         .ranking-chip.highlight-group {
             outline-offset: 2px;
             transform: scale(1.1);
-        }
-        @keyframes pulse-highlight {
-            0%, 100% { outline-color: #fbbf24; }
-            50% { outline-color: #f59e0b; }
+            border-radius: 16px;
         }
         .day-toggle {
             display: flex;
@@ -740,7 +839,7 @@
                 font-size: 1.4em;
             }
             .bar-chart {
-                height: 180px;
+                height: 220px;
             }
         }
     </style>
@@ -791,7 +890,7 @@
         <div class="stats" id="stats"></div>
 
         <div class="heatmap-container">
-            <div class="heatmap-title">📊 Outage Intensity by 30-min Slot (% of groups affected)</div>
+            <div class="heatmap-title">📊 Outage Intensity, %</div>
             <div id="heatmapWrapper"></div>
             <div class="legend">
                 <div class="legend-item"><div class="legend-color" style="background: #10b981;"></div> 0-20%</div>
@@ -803,7 +902,7 @@
         </div>
         
         <div class="heatmap-container">
-            <div class="heatmap-title">📈 Outages Over Time (groups without power)</div>
+            <div class="heatmap-title">📈 Outages Over Time</div>
             <div class="bar-chart" id="barChart">
                 <svg width="100%" height="100%" id="lineChart"></svg>
             </div>
@@ -812,29 +911,32 @@
         </div>
         
         <div class="heatmap-container">
-            <div class="heatmap-title">🔋 Power Status by 30-min Slot</div>
-            <div id="powerStatusChart" style="height: 60px; position: relative; margin-bottom: 10px;"></div>
+            <div class="heatmap-title">🔋 Power Status</div>
+            <div id="powerStatusChart" style="height: 60px; position: relative; margin-bottom: 4px;"></div>
             <div class="hour-labels power-status-labels" id="powerStatusLabels"></div>
             <div class="chart-legend" id="powerStatusLegend"></div>
         </div>
         
         <div class="heatmap-container">
-            <div class="heatmap-title">🔲 Detailed Grid: Groups × Hours (hover for details)</div>
-            <div style="overflow-x: auto;">
-                <div id="detailedGridHeader" style="display: grid; grid-template-columns: 50px repeat(48, 1fr); gap: 1px; min-width: 800px;">
-                    <div></div>
+            <div class="heatmap-title">🔲 Detailed Grid</div>
+            <div class="detailed-grid-wrap" id="detailedGridWrap">
+                <div class="scroll-shadow-right"></div>
+                <div class="detailed-grid-scroll" id="detailedGridScroll">
+                    <div id="detailedGridHeader" style="display: grid; grid-template-columns: 36px repeat(48, 1fr); gap: 1px; min-width: 800px; margin-left: 2px; margin-right: 2px;">
+                        <div></div>
+                    </div>
+                    <div id="detailedGrid" style="min-width: 800px;"></div>
                 </div>
-                <div id="detailedGrid" style="min-width: 800px;"></div>
             </div>
         </div>
 
         <div class="heatmap-container">
-            <div class="heatmap-title">🏆 Group Ranking by Outage Duration</div>
+            <div class="heatmap-title">🏆 Group Ranking</div>
             <div id="groupRanking"></div>
         </div>
 
         <div class="heatmap-container">
-            <div class="heatmap-title">📋 Groups Worst → Best</div>
+            <div class="heatmap-title">🔌 Power Loss Leaderboard</div>
             <div class="ranking-list" id="groupRankingList"></div>
         </div>
     </div>
@@ -923,6 +1025,11 @@
                 background: linear-gradient(135deg, #1e3a5f, #1e40af);
                 border: 1px solid #3b82f6;
                 color: #bfdbfe;
+            }
+            .status-banner.no-outages {
+                background: linear-gradient(135deg, #064e3b, #065f46);
+                border: 1px solid #10b981;
+                color: #a7f3d0;
             }
             .status-banner .banner-icon {
                 font-size: 28px;
@@ -1036,6 +1143,18 @@
             }).join(', ');
         }
 
+        function formatSlotsCompact(ranges) {
+            if (ranges.length === 0) return 'None';
+            const first2 = formatRanges(ranges.slice(0, 2));
+            // Count two-digit hours in first 2 ranges
+            const twoDigitHours = (first2.match(/\b\d{2}:/g) || []).length;
+            const showCount = twoDigitHours <= 1 ? Math.min(2, ranges.length) : 1;
+            const visible = formatRanges(ranges.slice(0, showCount));
+            const remaining = ranges.length - showCount;
+            if (remaining <= 0) return visible;
+            return `${visible} <span class="stat-more-slots" title="${formatRanges(ranges)}">see ${remaining} more</span>`;
+        }
+
         function formatWithOverflow(visibleText, allItems, formatFn) {
             if (allItems.length <= 5) return visibleText;
             const extra = allItems.length - 5;
@@ -1089,7 +1208,7 @@
                 cell.className = 'hour-cell';
                 cell.style.backgroundColor = getColor(percentage);
                 cell.style.color = percentage > 50 ? '#fff' : '#000';
-                cell.innerHTML = `<span>${Math.round(percentage)}%</span>`;
+                cell.innerHTML = `<span>${Math.round(percentage)}</span>`;
                 cell.title = `${formatSlotTime(slot)} - ${formatSlotTime(slot + 1)}\n${count} groups affected (${percentage.toFixed(1)}%)`;
                 return cell;
             }
@@ -1178,7 +1297,7 @@
             const leftPadding = 40;
             const rightPadding = 10;
             const topPadding = 10;
-            const bottomPadding = 10;
+            const bottomPadding = 40;
             const width = rect.width - leftPadding - rightPadding;
             const height = rect.height - topPadding - bottomPadding;
             const dotRadius = isMobile ? 2 : 3;
@@ -1217,33 +1336,40 @@
             svgContent += `<path d="${areaPath}" class="chart-fill"/>`;
             svgContent += `<path d="${linePath}" class="chart-line"/>`;
             
-            // Add dots - on mobile, show fewer dots
-            const dotInterval = isMobile ? 2 : 1; // Show every 2nd dot on mobile
+            // Add dots - on mobile, show fewer dots but with larger tap targets
+            const dotInterval = isMobile ? 2 : 1;
+            const hitRadius = isMobile ? 12 : dotRadius;
             points.forEach((p, idx) => {
                 if (idx % dotInterval === 0) {
-                    svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${dotRadius}" class="chart-dot">
-                        <title>${formatSlotTime(p.slot)}: ${p.count} groups</title>
+                    const tipText = `${formatSlotTime(p.slot)}: ${p.count} groups`;
+                    // Invisible larger hit area for mobile taps
+                    svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${hitRadius}" fill="transparent" class="chart-dot-hit" data-title="${tipText}" style="cursor:pointer;"/>`;
+                    // Visible dot
+                    svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${dotRadius}" class="chart-dot" pointer-events="none">
+                        <title>${tipText}</title>
                     </circle>`;
                 }
             });
             
             // Y-axis label
             svgContent += `<text x="12" y="${topPadding + height/2}" text-anchor="middle" fill="#888" font-size="10" transform="rotate(-90, 12, ${topPadding + height/2})">Groups</text>`;
-            
-            svg.innerHTML = svgContent;
-            
-            // X-axis labels - show fewer on mobile, aligned with chart
-            labels.innerHTML = '';
-            const labelInterval = isMobile ? 4 : 2; // Every 2h on mobile, every 1h on desktop
+
+            // X-axis labels inside SVG at exact data point positions
+            const labelInterval = isMobile ? 4 : 2;
             for (let slot = 0; slot < 48; slot++) {
-                const label = document.createElement('div');
-                label.textContent = slot % labelInterval === 0 ? `${Math.floor(slot/2)}` : '';
-                labels.appendChild(label);
+                if (slot % labelInterval === 0) {
+                    const x = leftPadding + (width / 47) * slot;
+                    svgContent += `<text x="${x}" y="${topPadding + height + 16}" text-anchor="middle" fill="#888" font-size="9">${Math.floor(slot/2)}</text>`;
+                }
             }
-            
-            // Add chart legend below labels
-            const legendContainer = document.getElementById('barChartLegend');
-            legendContainer.innerHTML = '<span style="color:#e94560;">●</span> Groups without power';
+
+            // Legend inside SVG
+            svgContent += `<circle cx="${leftPadding + 8}" cy="${topPadding + height + 30}" r="4" fill="#e94560"/>`;
+            svgContent += `<text x="${leftPadding + 16}" y="${topPadding + height + 34}" fill="#888" font-size="10">Groups without power</text>`;
+
+            svg.innerHTML = svgContent;
+            labels.innerHTML = '';
+            document.getElementById('barChartLegend').innerHTML = '';
         }
 
         function renderPowerStatusChart(hourlyOutages, totalGroups) {
@@ -1291,13 +1417,13 @@
             
             // Build header with time labels
             const isMobile = window.innerWidth <= 1080;
-            header.innerHTML = '<div></div>';
+            header.innerHTML = '<div class="grid-sticky-label"></div>';
             for (let i = 0; i < 48; i++) {
                 const div = document.createElement('div');
                 div.style.cssText = 'text-align: center; font-size: 7px; color: #888;';
                 if (isMobile) {
                     // On mobile, show only every 2 hours (every 4 slots)
-                    div.textContent = i % 4 === 0 ? `${Math.floor(i/2)}h` : '';
+                    div.textContent = i % 4 === 0 ? `${Math.floor(i/2)}` : '';
                 } else {
                     div.textContent = `${Math.floor(i/2)}:${i%2===0?'00':'30'}`;
                 }
@@ -1313,17 +1439,16 @@
             groups.forEach(groupId => {
                 const row = document.createElement('div');
                 row.style.display = 'grid';
-                row.style.gridTemplateColumns = '50px repeat(48, 1fr)';
+                row.style.gridTemplateColumns = '36px repeat(48, 1fr)';
                 row.style.gap = '1px';
                 row.style.marginBottom = '1px';
+                row.style.marginLeft = '2px';
+                row.style.marginRight = '2px';
+                row.style.minWidth = '800px';
                 
                 const label = document.createElement('div');
                 label.textContent = formatGroupId(groupId, groups);
-                label.style.fontSize = '9px';
-                label.style.display = 'flex';
-                label.style.alignItems = 'center';
-                label.style.justifyContent = 'center';
-                label.style.color = '#888';
+                label.className = 'grid-sticky-label';
                 row.appendChild(label);
                 
                 for (let s = 0; s < 48; s++) {
@@ -1395,7 +1520,11 @@
                 </div>
                 <div class="summary-item">
                     <div class="value">${formatDuration(Math.round(groupDurations.reduce((a, g) => a + g.minutes, 0) / groupDurations.length))}</div>
-                    <div class="label">Avg Outage Duration</div>
+                    <div class="label">Avg Outage</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value good">${formatDuration(Math.round(groupDurations.reduce((a, g) => a + g.powerOnMinutes, 0) / groupDurations.length))}</div>
+                    <div class="label">Avg Power On</div>
                 </div>
             `;
             
@@ -1403,21 +1532,13 @@
             const cards = [
                 {
                     title: '🔴 Worst Time Slots',
-                    value: formatWithOverflow(
-                        formatRanges(worstRanges.slice(0, 5)),
-                        worstRanges,
-                        r => formatRanges(r)
-                    ),
+                    value: formatSlotsCompact(worstRanges),
                     label: `${maxOutages} groups affected (${Math.round(maxOutages/totalGroups*100)}%)`,
                     isGood: false
                 },
                 {
                     title: '🟢 Best Time Slots',
-                    value: formatWithOverflow(
-                        formatRanges(bestRanges.slice(0, 5)),
-                        bestRanges,
-                        r => formatRanges(r)
-                    ),
+                    value: formatSlotsCompact(bestRanges),
                     label: `${minOutages} groups affected (${Math.round(minOutages/totalGroups*100)}%)`,
                     isGood: true
                 },
@@ -1459,52 +1580,81 @@
             const container = document.getElementById('groupRanking');
             container.innerHTML = '';
 
-            const sorted = Object.entries(groupStats)
-                .map(([id, s]) => ({ id, minutes: s.outageMinutes, periods: s.outagePeriods }))
+            // Group by duration
+            const byDuration = {};
+            Object.entries(groupStats).forEach(([id, s]) => {
+                const m = s.outageMinutes;
+                if (!byDuration[m]) byDuration[m] = [];
+                byDuration[m].push({ id, minutes: m, periods: s.outagePeriods });
+            });
+
+            // Sort durations descending, groups within same duration by number
+            const durationGroups = Object.entries(byDuration)
+                .map(([dur, groups]) => ({
+                    minutes: Number(dur),
+                    groups: groups.sort((a, b) => parseFloat(a.id) - parseFloat(b.id))
+                }))
                 .sort((a, b) => b.minutes - a.minutes);
 
-            const maxMin = sorted[0]?.minutes || 1;
+            const maxMin = durationGroups[0]?.minutes || 1;
+            const totalRanks = durationGroups.length;
 
-            // Pre-compute colors by unique duration so groups with same duration share the same color
-            const uniqueDurations = [...new Set(sorted.map(g => g.minutes))]; // already sorted desc
-            const colorMap = {};
-            uniqueDurations.forEach((dur, i) => {
-                const t = uniqueDurations.length > 1 ? i / (uniqueDurations.length - 1) : 1;
-                colorMap[dur] = dur === 0 ? '#10b981'
+            durationGroups.forEach((dg, i) => {
+                const rank = i + 1;
+                const barPct = maxMin > 0 ? Math.max(Math.round((dg.minutes / maxMin) * 100), dg.minutes > 0 ? 3 : 0) : 0;
+                const isTop = rank <= 3;
+                const isBottom = rank > totalRanks - 3;
+
+                // Color gradient based on rank position
+                const t = totalRanks > 1 ? i / (totalRanks - 1) : 1;
+                const color = dg.minutes === 0 ? '#10b981'
                     : t < 0.5
                         ? `rgb(${Math.round(239 + (234-239)*t*2)},${Math.round(68 + (179-68)*t*2)},${Math.round(68 + (8-68)*t*2)})`
                         : `rgb(${Math.round(234 + (16-234)*(t-0.5)*2)},${Math.round(179 + (185-179)*(t-0.5)*2)},${Math.round(8 + (129-8)*(t-0.5)*2)})`;
-            });
 
-            // Assign ranks by duration, then sort by group number for display
-            const ranked = sorted.map((g, i) => ({ ...g, rank: i + 1 }));
-            ranked.sort((a, b) => parseFloat(a.id) - parseFloat(b.id));
-
-            ranked.forEach((g) => {
-                const barPct = maxMin > 0 ? Math.round((g.minutes / maxMin) * 100) : 0;
-                const isTop = g.rank <= 3;
-                const isBottom = g.rank > ranked.length - 3;
-                const periodsStr = g.periods.map(p => {
+                const groupIds = dg.groups.map(g => formatGroupId(g.id, allGroups)).join(', ');
+                const periodsStr = dg.groups[0].periods.map(p => {
                     const sh = Math.floor(p.start / 60), sm = p.start % 60;
                     const eh = Math.floor(p.end / 60), em = p.end % 60;
                     return `${sh}:${String(sm).padStart(2,'0')}–${eh}:${String(em).padStart(2,'0')}`;
                 }).join(', ') || 'No outages';
 
-                const color = colorMap[g.minutes];
-
                 const row = document.createElement('div');
                 row.className = 'ranking-row' + (isTop ? ' top' : '') + (isBottom && !isTop ? ' bottom' : '');
-                row.dataset.group = g.id.split('.')[0];
-                row.innerHTML = `
-                    <div class="ranking-rank">#${g.rank}</div>
-                    <div class="ranking-group">${formatGroupId(g.id, allGroups)}</div>
-                    <div class="ranking-bar-wrap">
-                        <div class="ranking-bar" style="width:${barPct}%;background:${color};"></div>
+                // Tag row with all group IDs for highlighting
+                dg.groups.forEach(g => {
+                    const span = document.createElement('span');
+                    span.dataset.group = g.id.split('.')[0];
+                    span.style.display = 'none';
+                    row.appendChild(span);
+                });
+                row.innerHTML += `
+                    <div class="ranking-rank">#${rank}</div>
+                    <div class="ranking-bar-wrap" title="${groupIds}">
+                        <div class="ranking-bar" style="width:${barPct}%;background:${color};">
+                            <span class="ranking-bar-groups">${groupIds}</span>
+                        </div>
+                        <span class="ranking-bar-overflow">${groupIds}</span>
                     </div>
-                    <div class="ranking-duration">${formatDuration(g.minutes)}</div>
-                    <div class="ranking-periods">${periodsStr}</div>
+                    <div class="ranking-duration">${formatDuration(dg.minutes)}</div>
                 `;
                 container.appendChild(row);
+            });
+
+            // Show overflow labels where bar is too narrow for text
+            requestAnimationFrame(() => {
+                container.querySelectorAll('.ranking-bar-wrap').forEach(wrap => {
+                    const bar = wrap.querySelector('.ranking-bar');
+                    const inner = wrap.querySelector('.ranking-bar-groups');
+                    const overflow = wrap.querySelector('.ranking-bar-overflow');
+                    if (inner.scrollWidth > bar.clientWidth - 16) {
+                        inner.style.visibility = 'hidden';
+                        const leftPos = bar.clientWidth + 8;
+                        overflow.style.left = leftPos + 'px';
+                        overflow.style.maxWidth = (wrap.clientWidth - leftPos) + 'px';
+                        overflow.style.display = 'block';
+                    }
+                });
             });
         }
 
@@ -1514,7 +1664,7 @@
 
             const sorted = Object.entries(groupStats)
                 .map(([id, s]) => ({ id, minutes: s.outageMinutes }))
-                .sort((a, b) => b.minutes - a.minutes);
+                .sort((a, b) => b.minutes - a.minutes || parseFloat(a.id) - parseFloat(b.id));
 
             const uniqueDurations = [...new Set(sorted.map(g => g.minutes))];
             const colorMap = {};
@@ -1681,7 +1831,7 @@
             document.getElementById('groupPercentile').innerHTML = '';
         }
 
-        function applyGroupHighlight() {
+        function applyGroupHighlight(scroll) {
             document.querySelectorAll('.highlight-group').forEach(el => el.classList.remove('highlight-group'));
             if (!highlightedGroupId) return;
 
@@ -1691,13 +1841,17 @@
                 const label = row.children[0];
                 if (label && label.textContent === highlightedGroupId) {
                     row.classList.add('highlight-group');
-                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (scroll) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     break;
                 }
             }
 
-            // Ranking rows & chips
-            document.querySelectorAll('.ranking-row[data-group], .ranking-chip[data-group]').forEach(el => {
+            // Ranking rows (check hidden spans inside) & chips
+            document.querySelectorAll('.ranking-row').forEach(row => {
+                const hasGroup = row.querySelector(`span[data-group="${highlightedGroupId}"]`);
+                if (hasGroup) row.classList.add('highlight-group');
+            });
+            document.querySelectorAll('.ranking-chip[data-group]').forEach(el => {
                 if (el.dataset.group === highlightedGroupId) {
                     el.classList.add('highlight-group');
                 }
@@ -1900,14 +2054,14 @@
             else if (e.key === 'Escape') { hideDropdown(buildingDropdown); }
         });
 
-        function showSavedGroup(saved) {
+        function showSavedGroup(saved, scroll) {
             const groupId = `${saved.group}.${saved.subgroup}`;
             highlightedGroupId = String(saved.group);
             document.getElementById('groupNumber').textContent = `Group ${saved.group}.${saved.subgroup}`;
             document.getElementById('groupLabel').textContent = saved.label;
             document.getElementById('groupSchedule').innerHTML = formatGroupSchedule(groupId, selectedDay);
             groupResult.classList.add('visible');
-            applyGroupHighlight();
+            applyGroupHighlight(scroll);
             if (typeof updateShowSavedBtn === 'function') updateShowSavedBtn();
         }
 
@@ -1970,7 +2124,7 @@
                     label: `${selectedStreet.value}, ${selectedBuilding.value}`
                 };
                 saveGroupToStorage(saved);
-                showSavedGroup(saved);
+                showSavedGroup(saved, true);
             } catch(e) {
                 document.getElementById('groupNumber').textContent = 'Error';
                 document.getElementById('groupLabel').textContent = 'Could not determine group';
@@ -2008,6 +2162,15 @@
                     <div>
                         <strong>Schedule not yet available.</strong>
                         The outage schedule for this day hasn't been published yet. It usually appears a few hours before.
+                    </div>`;
+                banner.style.display = 'flex';
+            } else if (statuses.size === 1 && statuses.has('NoOutages')) {
+                banner.className = 'status-banner no-outages';
+                banner.innerHTML = `
+                    <span class="banner-icon">🎉</span>
+                    <div>
+                        <strong>No outages scheduled!</strong>
+                        All groups have power for the entire day. Enjoy!
                     </div>`;
                 banner.style.display = 'flex';
             } else {
@@ -2121,6 +2284,20 @@
         // Initialize - fetch data on page load
         fetchData();
         
+        // Detailed grid scroll shadows
+        const gridScroll = document.getElementById('detailedGridScroll');
+        const gridWrap = document.getElementById('detailedGridWrap');
+        function updateGridScrollState() {
+            const sl = gridScroll.scrollLeft;
+            const maxScroll = gridScroll.scrollWidth - gridScroll.clientWidth;
+            const hasOverflow = maxScroll > 1;
+            gridScroll.classList.toggle('scrolled', sl > 0);
+            gridScroll.classList.toggle('no-overflow', !hasOverflow);
+            gridWrap.classList.toggle('has-scroll-right', sl < maxScroll - 1);
+        }
+        gridScroll.addEventListener('scroll', updateGridScrollState);
+        new ResizeObserver(updateGridScrollState).observe(gridScroll);
+
         // Re-render on window resize for mobile responsiveness
         let resizeTimeout;
         window.addEventListener('resize', () => {
@@ -2131,6 +2308,72 @@
                 }
             }, 250);
         });
+        // Mobile: show tooltips on tap for elements with title attribute
+        (function() {
+            const tooltip = document.getElementById('tooltip');
+            let activeTitleEl = null;
+
+            function showTitleTooltip(el, x, y) {
+                const text = el.getAttribute('title') || el.getAttribute('data-title');
+                if (!text) return;
+                // Store and remove title to prevent native tooltip
+                if (el.hasAttribute('title')) {
+                    el.setAttribute('data-title', text);
+                    el.removeAttribute('title');
+                }
+                tooltip.innerHTML = text.replace(/\n/g, '<br>');
+                tooltip.style.display = 'block';
+                // Position tooltip
+                const tipRect = tooltip.getBoundingClientRect();
+                let left = x - tipRect.width / 2;
+                let top = y - tipRect.height - 10;
+                if (left < 5) left = 5;
+                if (left + tipRect.width > window.innerWidth - 5) left = window.innerWidth - tipRect.width - 5;
+                if (top < 5) top = y + 20;
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+                activeTitleEl = el;
+            }
+
+            function hideTitleTooltip() {
+                tooltip.style.display = 'none';
+                activeTitleEl = null;
+            }
+
+            document.addEventListener('touchstart', (e) => {
+                const el = e.target.closest('[title], [data-title]');
+                if (el) {
+                    const touch = e.touches[0];
+                    showTitleTooltip(el, touch.clientX, touch.clientY);
+                } else {
+                    hideTitleTooltip();
+                }
+            }, { passive: true });
+
+            // Also make detailed grid cells work on tap
+            document.addEventListener('click', (e) => {
+                const cell = e.target.closest('.group-cell');
+                if (cell) {
+                    const rect = cell.getBoundingClientRect();
+                    cell.dispatchEvent(new MouseEvent('mouseenter', {
+                        clientX: rect.left + rect.width / 2,
+                        clientY: rect.top
+                    }));
+                    setTimeout(() => {
+                        const tipRect = tooltip.getBoundingClientRect();
+                        let top = rect.top - tipRect.height - 5;
+                        if (top < 5) top = rect.bottom + 5;
+                        tooltip.style.left = (rect.left + rect.width / 2 - tipRect.width / 2) + 'px';
+                        tooltip.style.top = top + 'px';
+                    }, 0);
+                    return;
+                }
+                if (!e.target.closest('.tooltip') && !e.target.closest('[title]') && !e.target.closest('[data-title]')) {
+                    hideTitleTooltip();
+                    tooltip.style.display = 'none';
+                }
+            });
+        })();
     </script>
 </body>
 </html>
