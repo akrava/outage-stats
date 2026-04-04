@@ -1336,19 +1336,20 @@
             svgContent += `<path d="${areaPath}" class="chart-fill"/>`;
             svgContent += `<path d="${linePath}" class="chart-line"/>`;
             
-            // Add dots - on mobile, show fewer dots but with larger tap targets
-            const dotInterval = isMobile ? 2 : 1;
-            const hitRadius = isMobile ? 12 : dotRadius;
+            // Invisible overlay to find nearest point on tap/hover (rendered first, behind dots)
+            svgContent += `<rect x="${leftPadding}" y="${topPadding}" width="${width}" height="${height}" fill="transparent" class="chart-hit-overlay" style="cursor:pointer;"/>`;
+
+            // Store points data on the SVG for the interaction handler
+            svg._chartPoints = points;
+
+            // Add visible dots on top of overlay so they're directly clickable/hoverable
+            const dotHitRadius = isMobile ? 8 : 5;
             points.forEach((p, idx) => {
-                if (idx % dotInterval === 0) {
-                    const tipText = `${formatSlotTime(p.slot)}: ${p.count} groups`;
-                    // Invisible larger hit area for mobile taps
-                    svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${hitRadius}" fill="transparent" class="chart-dot-hit" data-title="${tipText}" style="cursor:pointer;"/>`;
-                    // Visible dot
-                    svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${dotRadius}" class="chart-dot" pointer-events="none">
-                        <title>${tipText}</title>
-                    </circle>`;
-                }
+                const tipText = `${formatSlotTime(p.slot)}: ${p.count} groups`;
+                // Larger invisible hit area per dot
+                svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${dotHitRadius}" fill="transparent" data-title="${tipText}" style="cursor:pointer;"/>`;
+                // Visible dot
+                svgContent += `<circle cx="${p.x}" cy="${p.y}" r="${dotRadius}" class="chart-dot" pointer-events="none"/>`;
             });
             
             // Y-axis label
@@ -1357,9 +1358,10 @@
             // X-axis labels inside SVG at exact data point positions
             const labelInterval = isMobile ? 4 : 2;
             for (let slot = 0; slot < 48; slot++) {
-                if (slot % labelInterval === 0) {
+                if (slot % labelInterval === 0 && slot % 2 === 0) {
                     const x = leftPadding + (width / 47) * slot;
-                    svgContent += `<text x="${x}" y="${topPadding + height + 16}" text-anchor="middle" fill="#888" font-size="9">${Math.floor(slot/2)}</text>`;
+                    const label = isMobile ? `${Math.floor(slot / 2)}` : `${Math.floor(slot / 2)}:00`;
+                    svgContent += `<text x="${x}" y="${topPadding + height + 16}" text-anchor="middle" fill="#888" font-size="9">${label}</text>`;
                 }
             }
 
@@ -2340,15 +2342,80 @@
                 activeTitleEl = null;
             }
 
+            function findNearestChartPoint(clientX, clientY) {
+                const svg = document.getElementById('lineChart');
+                if (!svg || !svg._chartPoints) return null;
+                const svgRect = svg.getBoundingClientRect();
+                const svgX = clientX - svgRect.left;
+                let nearest = null, minDist = Infinity;
+                for (const p of svg._chartPoints) {
+                    const dist = Math.abs(p.x - svgX);
+                    if (dist < minDist) { minDist = dist; nearest = p; }
+                }
+                if (!nearest) return null;
+                const screenX = svgRect.left + nearest.x;
+                const screenY = svgRect.top + nearest.y;
+                const tipText = `${formatSlotTime(nearest.slot)}: ${nearest.count} groups`;
+                return { x: screenX, y: screenY, tipText };
+            }
+
             document.addEventListener('touchstart', (e) => {
+                const overlay = e.target.closest('.chart-hit-overlay');
+                if (overlay) {
+                    const touch = e.touches[0];
+                    const pt = findNearestChartPoint(touch.clientX, touch.clientY);
+                    if (pt) {
+                        tooltip.innerHTML = pt.tipText;
+                        tooltip.style.display = 'block';
+                        const tipRect = tooltip.getBoundingClientRect();
+                        let left = pt.x - tipRect.width / 2;
+                        let top = pt.y - tipRect.height - 10;
+                        if (left < 5) left = 5;
+                        if (left + tipRect.width > window.innerWidth - 5) left = window.innerWidth - tipRect.width - 5;
+                        if (top < 5) top = pt.y + 20;
+                        tooltip.style.left = left + 'px';
+                        tooltip.style.top = top + 'px';
+                    }
+                    return;
+                }
                 const el = e.target.closest('[title], [data-title]');
                 if (el) {
-                    const touch = e.touches[0];
-                    showTitleTooltip(el, touch.clientX, touch.clientY);
+                    const rect = el.getBoundingClientRect();
+                    showTitleTooltip(el, rect.left + rect.width / 2, rect.top);
                 } else {
                     hideTitleTooltip();
                 }
             }, { passive: true });
+
+            // Desktop: show tooltip on hover for chart and data-title elements
+            document.addEventListener('mousemove', (e) => {
+                const overlay = e.target.closest('.chart-hit-overlay');
+                if (overlay) {
+                    const pt = findNearestChartPoint(e.clientX, e.clientY);
+                    if (pt) {
+                        tooltip.innerHTML = pt.tipText;
+                        tooltip.style.display = 'block';
+                        const tipRect = tooltip.getBoundingClientRect();
+                        let left = pt.x - tipRect.width / 2;
+                        let top = pt.y - tipRect.height - 10;
+                        if (left < 5) left = 5;
+                        if (left + tipRect.width > window.innerWidth - 5) left = window.innerWidth - tipRect.width - 5;
+                        if (top < 5) top = pt.y + 20;
+                        tooltip.style.left = left + 'px';
+                        tooltip.style.top = top + 'px';
+                    }
+                    return;
+                }
+                const el = e.target.closest('[data-title]');
+                if (el) {
+                    showTitleTooltip(el, e.clientX, e.clientY + 20);
+                }
+            });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest('.chart-hit-overlay') || e.target.closest('[data-title]')) {
+                    hideTitleTooltip();
+                }
+            });
 
             // Also make detailed grid cells work on tap
             document.addEventListener('click', (e) => {
