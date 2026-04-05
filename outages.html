@@ -217,10 +217,11 @@
             box-sizing: border-box;
         }
         .ranking-duration {
-            width: 55px;
+            min-width: 55px;
             text-align: center;
             color: #ccc;
             font-size: 13px;
+            white-space: nowrap;
             flex-shrink: 0;
         }
         .detailed-grid-wrap {
@@ -277,20 +278,29 @@
         @media (max-width: 600px) {
             .ranking-duration { width: 45px; }
             .container {
-                padding-bottom: 40px;
+                padding-bottom: 45px;
             }
             .refresh-btn {
+                display: none !important;
+            }
+            .floating-toolbar {
                 top: auto !important;
-                bottom: 16px !important;
-                left: 50% !important;
-                right: auto !important;
-                transform: translateX(-50%);
-                padding: 12px 32px !important;
-                border-radius: 24px !important;
-                font-size: 15px !important;
-                background: #1a1a2e !important;
-                border: 1px solid #333 !important;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                bottom: 25px !important;
+                right: 8px !important;
+                left: 8px !important;
+                border-radius: 10px !important;
+                justify-content: center;
+                padding: 5px 8px !important;
+            }
+            .floating-toolbar select {
+                flex: 1;
+                max-width: none;
+                font-size: 11px !important;
+                padding: 4px 6px !important;
+            }
+            .floating-toolbar button {
+                font-size: 14px !important;
+                padding: 2px 4px !important;
             }
         }
         .ranking-list {
@@ -313,8 +323,9 @@
         }
         .ranking-chip .chip-duration {
             font-weight: normal;
-            font-size: 11px;
+            font-size: 10px;
             opacity: 0.7;
+            white-space: nowrap;
         }
         .summary-bar {
             background: #16213e;
@@ -809,6 +820,77 @@
             opacity: 0.7;
             margin-top: 2px;
         }
+        .history-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .history-select {
+            background: #16213e;
+            color: #e0e0e0;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+        }
+        .history-select:focus {
+            border-color: #e94560;
+        }
+        .history-label {
+            color: #888;
+            font-size: 13px;
+        }
+        .history-clear {
+            background: transparent;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #888;
+            font-size: 14px;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-clear:hover {
+            border-color: #e94560;
+            color: #e94560;
+        }
+        .history-toggle-btn {
+            background: #16213e;
+            color: #888;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-toggle-btn:hover {
+            border-color: #e94560;
+            color: #ccc;
+        }
+        .history-toggle-btn.active {
+            background: #e94560;
+            color: #fff;
+            border-color: #e94560;
+        }
+        .history-days-info {
+            color: #888;
+            font-size: 11px;
+            font-weight: 400;
+        }
+        .history-badge {
+            background: #e94560;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
         /* Mobile responsive */
         @media (max-width: 1080px) {
             body {
@@ -854,6 +936,14 @@
                 <button class="day-toggle-btn active" data-day="today" id="btnToday">📅 Today<span class="day-date" id="btnTodayDate"></span></button>
                 <button class="day-toggle-btn" data-day="tomorrow" id="btnTomorrow">📅 Tomorrow<span class="day-date" id="btnTomorrowDate"></span></button>
             </div>
+        </div>
+
+        <div class="history-bar" id="historyBar" style="display: none;">
+            <span class="history-label">📜 History:</span>
+            <select class="history-select" id="historySelect">
+                <option value="live">Latest (live)</option>
+            </select>
+            <button class="history-clear" id="historyClear" title="Clear history">🗑️</button>
         </div>
 
         <div class="status-banner" id="statusBanner" style="display: none;"></div>
@@ -931,12 +1021,20 @@
         </div>
 
         <div class="heatmap-container">
-            <div class="heatmap-title">🏆 Group Ranking</div>
+            <div class="heatmap-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                🏆 Group Ranking
+                <button class="history-toggle-btn" id="rankingToggle" onclick="toggleRankingHistory()">Overall</button>
+                <span class="history-days-info" id="rankingDaysInfo" style="display:none;"></span>
+            </div>
             <div id="groupRanking"></div>
         </div>
 
         <div class="heatmap-container">
-            <div class="heatmap-title">🔌 Power Loss Leaderboard</div>
+            <div class="heatmap-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                🔌 Power Loss Leaderboard
+                <button class="history-toggle-btn" id="leaderboardToggle" onclick="toggleRankingHistory()">Overall</button>
+                <span class="history-days-info" id="leaderboardDaysInfo" style="display:none;"></span>
+            </div>
             <div class="ranking-list" id="groupRankingList"></div>
         </div>
     </div>
@@ -965,6 +1063,147 @@
             { name: 'allorigins', url: 'https://api.allorigins.win/get?url=', jsonWrapped: true }
         ];
         
+        // ---- History storage ----
+        const HISTORY_KEY = 'outageHistory';
+        const MAX_DAYS = 30;
+        const MAX_SNAPSHOTS_PER_DAY = 4;
+
+        function getHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {};
+            } catch { return {}; }
+        }
+
+        function saveHistory(history) {
+            // Prune to MAX_DAYS most recent
+            const dates = Object.keys(history).sort().reverse();
+            if (dates.length > MAX_DAYS) {
+                dates.slice(MAX_DAYS).forEach(d => delete history[d]);
+            }
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        }
+
+        function getDateFromData(data) {
+            const first = Object.values(data)[0];
+            return first?.today?.date?.split('T')[0] || new Date().toISOString().split('T')[0];
+        }
+
+        function storeSnapshot(data) {
+            const history = getHistory();
+            const dateKey = getDateFromData(data);
+            if (!history[dateKey]) history[dateKey] = { snapshots: [] };
+
+            const snaps = history[dateKey].snapshots;
+            const newJson = JSON.stringify(data);
+
+            // Don't save if identical to latest snapshot
+            if (snaps.length > 0 && JSON.stringify(snaps[snaps.length - 1].data) === newJson) {
+                return;
+            }
+
+            const firstGroup = Object.values(data)[0];
+            const timestamp = firstGroup?.updatedOn || new Date().toISOString();
+            snaps.push({ timestamp, data });
+
+            // Keep only latest MAX_SNAPSHOTS_PER_DAY
+            if (snaps.length > MAX_SNAPSHOTS_PER_DAY) {
+                history[dateKey].snapshots = snaps.slice(-MAX_SNAPSHOTS_PER_DAY);
+            }
+
+            saveHistory(history);
+            renderHistorySelector();
+        }
+
+        function renderHistorySelector() {
+            const history = getHistory();
+            const select = document.getElementById('historySelect');
+            const bar = document.getElementById('historyBar');
+            const dates = Object.keys(history).sort().reverse();
+
+            if (dates.length === 0) {
+                bar.style.display = 'none';
+                return;
+            }
+
+            bar.style.display = 'flex';
+            const currentValue = select.value;
+            select.innerHTML = '<option value="live">Latest (live)</option>';
+
+            dates.forEach(dateStr => {
+                const snaps = history[dateStr].snapshots;
+                const d = new Date(dateStr + 'T00:00:00');
+                const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
+
+                snaps.slice().reverse().forEach((snap, revIdx) => {
+                    const t = new Date(snap.timestamp);
+                    const timeLabel = t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    const key = `${dateStr}|${snap.timestamp}`;
+                    const label = `${dateLabel} @ ${timeLabel}`;
+                    select.innerHTML += `<option value="${key}">${label}</option>`;
+                });
+            });
+
+            // Restore selection if still valid
+            if (select.querySelector(`option[value="${currentValue}"]`)) {
+                select.value = currentValue;
+            } else {
+                select.value = 'live';
+            }
+            syncFloatingHistory();
+        }
+
+        function syncFloatingHistory() {
+            const floating = document.getElementById('floatingHistorySelect');
+            if (!floating) return;
+            const main = document.getElementById('historySelect');
+            floating.innerHTML = main.innerHTML;
+            floating.value = main.value;
+        }
+
+        let viewingSnapshot = null; // null = live, or { timestamp } when viewing history
+
+        function setSnapshotMode(snapshot) {
+            viewingSnapshot = snapshot;
+            const toggleBtns = document.querySelectorAll('.day-toggle-btn');
+            toggleBtns.forEach(btn => {
+                btn.disabled = !!snapshot;
+                btn.style.opacity = snapshot ? '0.4' : '';
+                btn.style.pointerEvents = snapshot ? 'none' : '';
+            });
+        }
+
+        document.getElementById('historySelect').addEventListener('change', (e) => {
+            // Sync floating selector
+            const floating = document.getElementById('floatingHistorySelect');
+            if (floating) floating.value = e.target.value;
+            const val = e.target.value;
+            if (val === 'live') {
+                setSnapshotMode(null);
+                if (outageData) {
+                    renderAll(outageData, selectedDay);
+                }
+                return;
+            }
+            const [dateStr, timestamp] = val.split('|');
+            const history = getHistory();
+            const snap = history[dateStr]?.snapshots.find(s => s.timestamp === timestamp);
+            if (snap) {
+                setSnapshotMode({ timestamp: snap.timestamp });
+                renderAll(snap.data, 'today');
+            }
+        });
+
+        document.getElementById('historyClear').addEventListener('click', () => {
+            if (!confirm('Clear all saved history?')) return;
+            localStorage.removeItem(HISTORY_KEY);
+            setSnapshotMode(null);
+            document.getElementById('historySelect').value = 'live';
+            renderHistorySelector();
+            if (outageData) {
+                renderAll(outageData, selectedDay);
+            }
+        });
+
         // Add loading and error styles
         const style = document.createElement('style');
         style.textContent = `
@@ -1043,6 +1282,47 @@
             .status-banner a:hover {
                 opacity: 1;
                 color: #fff;
+            }
+            .floating-toolbar {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                z-index: 100;
+                background: #16213e;
+                border: 1px solid #333;
+                border-radius: 10px;
+                padding: 6px 10px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            }
+            .floating-toolbar select {
+                background: #0f0f23;
+                color: #e0e0e0;
+                border: 1px solid #444;
+                border-radius: 6px;
+                padding: 5px 8px;
+                font-size: 12px;
+                cursor: pointer;
+                outline: none;
+                max-width: 180px;
+            }
+            .floating-toolbar select:focus {
+                border-color: #e94560;
+            }
+            .floating-toolbar button {
+                background: transparent;
+                color: #fff;
+                border: none;
+                cursor: pointer;
+                font-size: 16px;
+                padding: 4px 6px;
+                border-radius: 4px;
+                transition: background 0.2s;
+            }
+            .floating-toolbar button:hover {
+                background: #1f2b4a;
             }
             .refresh-btn {
                 position: fixed;
@@ -1578,7 +1858,81 @@
             });
         }
 
-        function renderGroupRanking(groupStats, allGroups) {
+        let showHistoryRanking = false;
+
+        function getAggregatedHistoryStats() {
+            const history = getHistory();
+            const dates = Object.keys(history).sort();
+            if (dates.length === 0) return null;
+
+            const totals = {}; // groupId -> total minutes
+            let dayCount = 0;
+            let allGroups = [];
+
+            dates.forEach(dateStr => {
+                const snaps = history[dateStr].snapshots;
+                if (snaps.length === 0) return;
+                // Use latest snapshot for each day
+                const data = snaps[snaps.length - 1].data;
+                const groups = Object.keys(data);
+                if (allGroups.length === 0) allGroups = groups;
+                dayCount++;
+
+                groups.forEach(groupId => {
+                    const slots = data[groupId]?.today?.slots || [];
+                    let minutes = 0;
+                    slots.forEach(slot => {
+                        if (slot.type === 'Definite') {
+                            minutes += (slot.end - slot.start);
+                        }
+                    });
+                    totals[groupId] = (totals[groupId] || 0) + minutes;
+                });
+            });
+
+            return { totals, dayCount, allGroups };
+        }
+
+        function toggleRankingHistory() {
+            showHistoryRanking = !showHistoryRanking;
+            const btns = document.querySelectorAll('.history-toggle-btn');
+            btns.forEach(b => {
+                b.classList.toggle('active', showHistoryRanking);
+                b.textContent = showHistoryRanking ? 'Today' : 'Overall';
+            });
+
+            if (showHistoryRanking) {
+                const agg = getAggregatedHistoryStats();
+                if (agg && agg.dayCount > 0) {
+                    // Build groupStats-like object with total and avg
+                    const groupStats = {};
+                    agg.allGroups.forEach(id => {
+                        groupStats[id] = { outageMinutes: agg.totals[id] || 0, outagePeriods: [] };
+                    });
+                    renderGroupRanking(groupStats, agg.allGroups, agg.dayCount);
+                    renderGroupRankingList(groupStats, agg.allGroups, agg.dayCount);
+                    const info = `${agg.dayCount} day${agg.dayCount > 1 ? 's' : ''} of history`;
+                    document.getElementById('rankingDaysInfo').textContent = info;
+                    document.getElementById('rankingDaysInfo').style.display = '';
+                    document.getElementById('leaderboardDaysInfo').textContent = info;
+                    document.getElementById('leaderboardDaysInfo').style.display = '';
+                }
+            } else {
+                document.getElementById('rankingDaysInfo').style.display = 'none';
+                document.getElementById('leaderboardDaysInfo').style.display = 'none';
+                if (outageData) {
+                    const currentData = document.getElementById('historySelect').value === 'live' ? outageData : null;
+                    if (currentData) {
+                        const { groupStats } = parseOutages(currentData, selectedDay);
+                        const groups = Object.keys(currentData);
+                        renderGroupRanking(groupStats, groups);
+                        renderGroupRankingList(groupStats, groups);
+                    }
+                }
+            }
+        }
+
+        function renderGroupRanking(groupStats, allGroups, historyDays) {
             const container = document.getElementById('groupRanking');
             container.innerHTML = '';
 
@@ -1630,6 +1984,9 @@
                     span.style.display = 'none';
                     row.appendChild(span);
                 });
+                const durationLabel = historyDays
+                    ? `${formatDuration(dg.minutes)} <span style="color:#888;font-size:10px;">(${formatDuration(Math.round(dg.minutes / historyDays))}/d)</span>`
+                    : formatDuration(dg.minutes);
                 row.innerHTML += `
                     <div class="ranking-rank">#${rank}</div>
                     <div class="ranking-bar-wrap" title="${groupIds}">
@@ -1638,7 +1995,7 @@
                         </div>
                         <span class="ranking-bar-overflow">${groupIds}</span>
                     </div>
-                    <div class="ranking-duration">${formatDuration(dg.minutes)}</div>
+                    <div class="ranking-duration">${durationLabel}</div>
                 `;
                 container.appendChild(row);
             });
@@ -1660,7 +2017,7 @@
             });
         }
 
-        function renderGroupRankingList(groupStats, allGroups) {
+        function renderGroupRankingList(groupStats, allGroups, historyDays) {
             const container = document.getElementById('groupRankingList');
             container.innerHTML = '';
 
@@ -1683,7 +2040,10 @@
                 chip.className = 'ranking-chip';
                 chip.dataset.group = g.id.split('.')[0];
                 chip.style.background = colorMap[g.minutes];
-                chip.innerHTML = `${formatGroupId(g.id, allGroups)} <span class="chip-duration">${formatDuration(g.minutes)}</span>`;
+                const durationLabel = historyDays
+                    ? `${formatDuration(g.minutes)} (${formatDuration(Math.round(g.minutes / historyDays))}/d)`
+                    : formatDuration(g.minutes);
+                chip.innerHTML = `${formatGroupId(g.id, allGroups)} <span class="chip-duration">${durationLabel}</span>`;
                 container.appendChild(chip);
             });
         }
@@ -1724,15 +2084,54 @@
             day = day || selectedDay;
             const subtitle = document.querySelector('.subtitle');
             const firstGroup = Object.values(data)[0];
-            const dayLabel = day === 'today' ? 'Today' : 'Tomorrow';
-            if (firstGroup?.[day]?.date) {
-                const date = new Date(firstGroup[day].date);
-                subtitle.textContent = `${dayLabel}'s planned outages (${date.toLocaleDateString('en-US', { 
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-                })})`;
+
+            if (viewingSnapshot) {
+                // Snapshot mode
+                const snapTime = new Date(viewingSnapshot.timestamp);
+                const snapLabel = snapTime.toLocaleString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                });
+                if (firstGroup?.[day]?.date) {
+                    const date = new Date(firstGroup[day].date);
+                    const dateLabel = date.toLocaleDateString('en-US', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                    subtitle.textContent = `Snapshot: ${dateLabel}`;
+                } else {
+                    subtitle.textContent = `Snapshot`;
+                }
+
+                let lastUpdatedDiv = document.querySelector('.last-updated');
+                if (!lastUpdatedDiv) {
+                    lastUpdatedDiv = document.createElement('div');
+                    lastUpdatedDiv.className = 'last-updated';
+                    document.querySelector('.day-toggle').after(lastUpdatedDiv);
+                }
+                lastUpdatedDiv.textContent = `Snapshot from: ${snapLabel}`;
+            } else {
+                // Live mode
+                const dayLabel = day === 'today' ? 'Today' : 'Tomorrow';
+                if (firstGroup?.[day]?.date) {
+                    const date = new Date(firstGroup[day].date);
+                    subtitle.textContent = `${dayLabel}'s planned outages (${date.toLocaleDateString('en-US', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    })})`;
+                }
+
+                if (firstGroup?.updatedOn) {
+                    const updated = new Date(firstGroup.updatedOn);
+                    let lastUpdatedDiv = document.querySelector('.last-updated');
+                    if (!lastUpdatedDiv) {
+                        lastUpdatedDiv = document.createElement('div');
+                        lastUpdatedDiv.className = 'last-updated';
+                        document.querySelector('.day-toggle').after(lastUpdatedDiv);
+                    }
+                    lastUpdatedDiv.textContent = `Last updated: ${updated.toLocaleString()}`;
+                }
             }
-            
-            // Populate toggle button dates
+
+            // Populate toggle button dates (always, from live or snapshot data)
             if (firstGroup?.today?.date) {
                 const todayDate = new Date(firstGroup.today.date);
                 document.getElementById('btnTodayDate').textContent = todayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -1740,18 +2139,6 @@
             if (firstGroup?.tomorrow?.date) {
                 const tomorrowDate = new Date(firstGroup.tomorrow.date);
                 document.getElementById('btnTomorrowDate').textContent = tomorrowDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            }
-            
-            // Add last updated info
-            if (firstGroup?.updatedOn) {
-                const updated = new Date(firstGroup.updatedOn);
-                let lastUpdatedDiv = document.querySelector('.last-updated');
-                if (!lastUpdatedDiv) {
-                    lastUpdatedDiv = document.createElement('div');
-                    lastUpdatedDiv.className = 'last-updated';
-                    document.querySelector('.day-toggle').after(lastUpdatedDiv);
-                }
-                lastUpdatedDiv.textContent = `Last updated: ${updated.toLocaleString()}`;
             }
         }
 
@@ -2181,13 +2568,27 @@
         }
 
         function renderAll(data, day) {
+            const scrollY = window.scrollY;
             clearAllContainers();
             updateStatusBanner(data, day);
             const { hourlyOutages, groups, groupHourData, groupStats } = parseOutages(data, day);
             updateSubtitle(data, day);
             renderStats(hourlyOutages, groups.length, groupStats, groups);
-            renderGroupRanking(groupStats, groups);
-            renderGroupRankingList(groupStats, groups);
+            if (showHistoryRanking) {
+                // Re-trigger history aggregation to keep it in sync
+                const agg = getAggregatedHistoryStats();
+                if (agg && agg.dayCount > 0) {
+                    const histStats = {};
+                    agg.allGroups.forEach(id => {
+                        histStats[id] = { outageMinutes: agg.totals[id] || 0, outagePeriods: [] };
+                    });
+                    renderGroupRanking(histStats, agg.allGroups, agg.dayCount);
+                    renderGroupRankingList(histStats, agg.allGroups, agg.dayCount);
+                }
+            } else {
+                renderGroupRanking(groupStats, groups);
+                renderGroupRankingList(groupStats, groups);
+            }
             renderHeatmap(hourlyOutages, groups.length);
             renderBarChart(hourlyOutages, groups.length);
             renderPowerStatusChart(hourlyOutages, groups.length);
@@ -2202,6 +2603,7 @@
                     document.getElementById('groupSchedule').innerHTML = formatGroupSchedule(gText, day);
                 }
             }
+            window.scrollTo(0, scrollY);
         }
 
         // Day toggle handling
@@ -2211,6 +2613,10 @@
                 selectedDay = btn.dataset.day;
                 document.querySelectorAll('.day-toggle-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
+                // Switch back to live data when changing day
+                setSnapshotMode(null);
+                document.getElementById('historySelect').value = 'live';
+                syncFloatingHistory();
                 if (outageData) {
                     renderAll(outageData, selectedDay);
                 }
@@ -2249,6 +2655,11 @@
                     
                     console.log(`Success with ${proxy.name}`);
                     hideLoading();
+                    storeSnapshot(outageData);
+                    // Reset history selector to live when fresh data arrives
+                    setSnapshotMode(null);
+                    document.getElementById('historySelect').value = 'live';
+                    syncFloatingHistory();
                     renderAll(outageData, selectedDay);
 
                     // Restore saved group from localStorage
@@ -2260,13 +2671,30 @@
                         updateShowSavedBtn();
                     } catch(e) {}
 
-                    // Add refresh button if not exists
-                    if (!document.querySelector('.refresh-btn')) {
+                    // Add floating toolbar if not exists
+                    if (!document.querySelector('.floating-toolbar')) {
+                        const toolbar = document.createElement('div');
+                        toolbar.className = 'floating-toolbar';
+                        toolbar.id = 'floatingToolbar';
+
+                        const sel = document.createElement('select');
+                        sel.id = 'floatingHistorySelect';
+                        sel.innerHTML = '<option value="live">Latest (live)</option>';
+                        sel.addEventListener('change', (e) => {
+                            // Sync with main selector
+                            document.getElementById('historySelect').value = e.target.value;
+                            document.getElementById('historySelect').dispatchEvent(new Event('change'));
+                        });
+                        toolbar.appendChild(sel);
+
                         const refreshBtn = document.createElement('button');
-                        refreshBtn.className = 'refresh-btn';
-                        refreshBtn.innerHTML = '🔄 Refresh';
+                        refreshBtn.innerHTML = '🔄';
+                        refreshBtn.title = 'Refresh';
                         refreshBtn.onclick = fetchData;
-                        document.body.appendChild(refreshBtn);
+                        toolbar.appendChild(refreshBtn);
+
+                        document.body.appendChild(toolbar);
+                        syncFloatingHistory();
                     }
                     
                     return; // Success - exit the function
@@ -2283,7 +2711,8 @@
             showError(lastError?.message || 'All CORS proxies failed. Please try again later.');
         }
 
-        // Initialize - fetch data on page load
+        // Initialize - render history selector and fetch data
+        renderHistorySelector();
         fetchData();
         
         // Detailed grid scroll shadows
