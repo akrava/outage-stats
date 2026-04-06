@@ -1876,8 +1876,18 @@
             dates.forEach(dateStr => {
                 const snaps = history[dateStr].snapshots;
                 if (snaps.length === 0) return;
-                // Use latest snapshot for each day
-                const data = snaps[snaps.length - 1].data;
+                // Pick best snapshot: latest that has real schedule (not emergency/no-outages)
+                // Fall back to latest if all snapshots are emergency or no-outages
+                let data = null;
+                for (let i = snaps.length - 1; i >= 0; i--) {
+                    const d = snaps[i].data;
+                    const statuses = new Set(Object.values(d).map(g => g.today?.status).filter(Boolean));
+                    if (!statuses.has('EmergencyShutdowns') && !(statuses.size === 1 && statuses.has('NoOutages'))) {
+                        data = d;
+                        break;
+                    }
+                }
+                if (!data) data = snaps[snaps.length - 1].data;
                 const groups = Object.keys(data);
                 if (allGroups.length === 0) allGroups = groups;
                 dayCount++;
