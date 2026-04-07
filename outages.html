@@ -1174,6 +1174,23 @@
                 btn.style.opacity = snapshot ? '0.4' : '';
                 btn.style.pointerEvents = snapshot ? 'none' : '';
             });
+            // Disable overall/today toggle in snapshot mode
+            const histBtns = document.querySelectorAll('.history-toggle-btn');
+            histBtns.forEach(btn => {
+                btn.disabled = !!snapshot;
+                btn.style.opacity = snapshot ? '0.4' : '';
+                btn.style.pointerEvents = snapshot ? 'none' : '';
+            });
+            // Reset to "today" view when entering snapshot mode
+            if (snapshot && showHistoryRanking) {
+                showHistoryRanking = false;
+                histBtns.forEach(b => {
+                    b.classList.remove('active');
+                    b.textContent = 'Overall';
+                });
+                document.getElementById('rankingDaysInfo').style.display = 'none';
+                document.getElementById('leaderboardDaysInfo').style.display = 'none';
+            }
         }
 
         document.getElementById('historySelect').addEventListener('change', (e) => {
@@ -1925,7 +1942,10 @@
                     });
                     renderGroupRanking(groupStats, agg.allGroups, agg.dayCount);
                     renderGroupRankingList(groupStats, agg.allGroups, agg.dayCount);
-                    const info = `${agg.dayCount} day${agg.dayCount > 1 ? 's' : ''} of history`;
+                    const isMobile = window.innerWidth <= 600;
+                    const info = isMobile
+                        ? `for ${agg.dayCount}d`
+                        : `${agg.dayCount} day${agg.dayCount > 1 ? 's' : ''} of history`;
                     document.getElementById('rankingDaysInfo').textContent = info;
                     document.getElementById('rankingDaysInfo').style.display = '';
                     document.getElementById('leaderboardDaysInfo').textContent = info;
