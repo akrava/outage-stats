@@ -2036,11 +2036,15 @@
 
             // Show overflow labels where bar is too narrow for text
             requestAnimationFrame(() => {
+                const isMobile = window.innerWidth <= 600;
                 container.querySelectorAll('.ranking-bar-wrap').forEach(wrap => {
                     const bar = wrap.querySelector('.ranking-bar');
                     const inner = wrap.querySelector('.ranking-bar-groups');
                     const overflow = wrap.querySelector('.ranking-bar-overflow');
-                    if (inner.scrollWidth > bar.clientWidth - 16) {
+                    const barTooNarrow = isMobile
+                        ? bar.clientWidth < wrap.clientWidth * 0.5
+                        : inner.scrollWidth > bar.clientWidth - 16;
+                    if (barTooNarrow) {
                         inner.style.visibility = 'hidden';
                         const leftPos = bar.clientWidth + 8;
                         overflow.style.left = leftPos + 'px';
