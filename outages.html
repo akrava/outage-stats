@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Kyiv Power Outage Heatmap - Yasno</title>
     <style>
         * {
@@ -1059,12 +1060,14 @@
     <script>
         const API_URL = 'https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/25/dsos/902/planned-outages';
         
-        // Multiple CORS proxies to try (fallback chain)
-        // All must return Access-Control-Allow-Origin: * to work from file:// (null origin)
+        const CORSPROXY_KEY = '';
+
+        // Proxy endpoints are tried in order with bounded request times.
         const CORS_PROXIES = [
-            { name: 'corsproxy.io', url: 'https://corsproxy.io/?' },
-            { name: 'codetabs', url: 'https://api.codetabs.com/v1/proxy?quest=' },
-            { name: 'allorigins', url: 'https://api.allorigins.win/get?url=', jsonWrapped: true }
+            ...(CORSPROXY_KEY ? [{ name: 'corsproxy.dev', url: `https://api.corsproxy.dev/proxy?key=${encodeURIComponent(CORSPROXY_KEY)}&url=`, timeoutMs: 10000 }] : []),
+            { name: 'corx', url: 'https://corx.venipa.workers.dev/?url=', timeoutMs: 10000 },
+            { name: 'reef-proxy', url: 'https://reef-proxy.onrender.com/get?url=', timeoutMs: 10000 },
+            { name: 'allorigins', url: 'https://api.allorigins.win/get?url=', jsonWrapped: true, timeoutMs: 12000 }
         ];
         
         // ---- History storage ----
@@ -2200,16 +2203,42 @@
         const buildingDropdown = document.getElementById('buildingDropdown');
         const groupResult = document.getElementById('groupResult');
 
+        async function fetchFromProxy(proxy, apiUrl) {
+            const controller = new AbortController();
+            const timeoutMs = proxy.timeoutMs || 10000;
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+            try {
+                const response = await fetch(proxy.url + encodeURIComponent(apiUrl), {
+                    headers: {
+                        'Accept': 'application/json, text/plain, */*'
+                    },
+                    signal: controller.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                if (proxy.jsonWrapped) {
+                    const wrapper = await response.json();
+                    return JSON.parse(wrapper.contents);
+                }
+                return await response.json();
+            } catch (error) {
+                if (controller.signal.aborted) {
+                    throw new Error(`${proxy.name} timed out after ${timeoutMs / 1000}s`);
+                }
+                throw error;
+            } finally {
+                clearTimeout(timeout);
+            }
+        }
+
         async function fetchViaProxy(apiUrl) {
             for (const proxy of CORS_PROXIES) {
                 try {
-                    const res = await fetch(proxy.url + encodeURIComponent(apiUrl));
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    if (proxy.jsonWrapped) {
-                        const wrapper = await res.json();
-                        return JSON.parse(wrapper.contents);
-                    }
-                    return await res.json();
+                    return await fetchFromProxy(proxy, apiUrl);
                 } catch(e) {
                     continue;
                 }
@@ -2670,22 +2699,7 @@
             for (const proxy of CORS_PROXIES) {
                 try {
                     console.log(`Trying ${proxy.name}...`);
-                    const response = await fetch(proxy.url + encodeURIComponent(API_URL), {
-                        headers: {
-                            'Accept': 'application/json, text/plain, */*'
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    if (proxy.jsonWrapped) {
-                        const wrapper = await response.json();
-                        outageData = JSON.parse(wrapper.contents);
-                    } else {
-                        outageData = await response.json();
-                    }
+                    outageData = await fetchFromProxy(proxy, API_URL);
                     
                     if (!outageData || Object.keys(outageData).length === 0) {
                         throw new Error('No outage data received');

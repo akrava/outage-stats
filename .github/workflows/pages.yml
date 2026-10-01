@@ -1,0 +1,60 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static site
+        env:
+          CORSPROXY_KEY: ${{ secrets.CORSPROXY_KEY }}
+        run: |
+          mkdir dist
+          cp index.html outages.html favicon.svg dist/
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'dist/outages.html';
+          const html = fs.readFileSync(file, 'utf8');
+          const placeholder = "const CORSPROXY_KEY = '';";
+          if (!html.includes(placeholder)) {
+            throw new Error('corsproxy.dev key placeholder not found');
+          }
+          const key = process.env.CORSPROXY_KEY || '';
+          fs.writeFileSync(file, html.replace(placeholder, `const CORSPROXY_KEY = ${JSON.stringify(key)};`));
+          NODE
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

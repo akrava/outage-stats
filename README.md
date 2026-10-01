@@ -47,3 +47,9 @@ Schedule data is fetched live from the [Yasno API](https://yasno.com.ua) via COR
 ## Usage
 
 Open `index.html` in a browser. No build tools, no dependencies, no server required — it's a single self-contained HTML file.
+
+## GitHub Pages Deployment
+
+The repository workflow publishes the static pages when changes are pushed to `master`. In repository settings, set **Pages > Build and deployment > Source** to **GitHub Actions**. Add a rotated corsproxy.dev key as the `CORSPROXY_KEY` Actions secret under **Secrets and variables > Actions**. The workflow injects it into the published HTML; local source keeps the key empty and falls back to the public proxies.
+
+The key is still visible in the deployed page and browser requests. Keep its corsproxy.dev restrictions limited to this site's origin and the Yasno API host/path.
