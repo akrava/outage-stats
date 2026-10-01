@@ -248,6 +248,21 @@
             overflow-x: auto;
             position: relative;
         }
+        .detailed-grid-header,
+        .detailed-grid-row {
+            display: grid;
+            grid-template-columns: 36px repeat(48, 1fr);
+            gap: 1px;
+            min-width: 800px;
+            margin-left: 2px;
+            margin-right: 2px;
+        }
+        .detailed-grid-row {
+            margin-bottom: 1px;
+        }
+        .detailed-grid {
+            min-width: 800px;
+        }
         .grid-sticky-label {
             position: sticky;
             left: 0;
@@ -276,6 +291,85 @@
         }
         .detailed-grid-scroll.scrolled .grid-sticky-label::after {
             opacity: 1;
+        }
+        .grid-group-toggle {
+            border: 0;
+            font: inherit;
+            cursor: default;
+        }
+        .grid-expanded[hidden] {
+            display: none !important;
+        }
+        .grid-expanded {
+            padding: 3px 2px 8px 38px;
+        }
+        .grid-expanded-period {
+            margin: 3px 0;
+            color: #888;
+            font-size: 9px;
+        }
+        .grid-expanded-slots {
+            display: grid;
+            grid-template-columns: repeat(24, minmax(0, 1fr));
+            gap: 2px;
+        }
+        .grid-expanded .group-cell {
+            height: 22px;
+        }
+        @media (max-width: 853px) {
+            .detailed-grid-scroll {
+                overflow-x: hidden;
+            }
+            .detailed-grid,
+            .detailed-grid-header,
+            .detailed-grid-row {
+                min-width: 0;
+            }
+            .detailed-grid-header,
+            .detailed-grid-row {
+                grid-template-columns: 32px repeat(48, minmax(0, 1fr));
+                gap: 0;
+                margin-left: 0;
+                margin-right: 0;
+            }
+            .detailed-grid-row .group-cell {
+                height: 15px;
+                border-radius: 1px;
+            }
+            .grid-sticky-label {
+                position: static;
+                z-index: auto;
+            }
+            .grid-sticky-label::after {
+                display: none;
+            }
+            .grid-group-toggle {
+                width: 100%;
+                padding: 0 1px;
+                background: transparent;
+                color: #ccc;
+                font-size: 8px;
+                line-height: 15px;
+                cursor: pointer;
+            }
+            .grid-group-toggle:focus-visible {
+                outline: 2px solid #fbbf24;
+                outline-offset: -1px;
+            }
+            .grid-group-toggle::after {
+                content: '+';
+                margin-left: 1px;
+                color: #fbbf24;
+            }
+            .grid-group-toggle[aria-expanded="true"]::after {
+                content: '-';
+            }
+            .grid-expanded {
+                padding: 3px 0 8px 32px;
+            }
+            .grid-expanded .group-cell {
+                height: 24px;
+            }
         }
         @media (max-width: 600px) {
             .ranking-duration { width: 45px; }
@@ -1017,10 +1111,10 @@
             <div class="detailed-grid-wrap" id="detailedGridWrap">
                 <div class="scroll-shadow-right"></div>
                 <div class="detailed-grid-scroll" id="detailedGridScroll">
-                    <div id="detailedGridHeader" style="display: grid; grid-template-columns: 36px repeat(48, 1fr); gap: 1px; min-width: 800px; margin-left: 2px; margin-right: 2px;">
+                    <div id="detailedGridHeader" class="detailed-grid-header">
                         <div></div>
                     </div>
-                    <div id="detailedGrid" style="min-width: 800px;"></div>
+                    <div id="detailedGrid" class="detailed-grid"></div>
                 </div>
             </div>
         </div>
@@ -1720,6 +1814,7 @@
             const container = document.getElementById('detailedGrid');
             const header = document.getElementById('detailedGridHeader');
             const tooltip = document.getElementById('tooltip');
+            const isCompactGrid = window.innerWidth <= 853;
             
             // Build header with time labels
             const isMobile = window.innerWidth <= 1080;
@@ -1744,17 +1839,17 @@
             
             groups.forEach(groupId => {
                 const row = document.createElement('div');
-                row.style.display = 'grid';
-                row.style.gridTemplateColumns = '36px repeat(48, 1fr)';
-                row.style.gap = '1px';
-                row.style.marginBottom = '1px';
-                row.style.marginLeft = '2px';
-                row.style.marginRight = '2px';
-                row.style.minWidth = '800px';
+                row.className = 'detailed-grid-row';
                 
-                const label = document.createElement('div');
+                const label = document.createElement(isCompactGrid ? 'button' : 'div');
+                if (isCompactGrid) {
+                    label.type = 'button';
+                    label.setAttribute('aria-expanded', 'false');
+                    label.setAttribute('aria-label', `Show detailed schedule for group ${formatGroupId(groupId, groups)}`);
+                }
                 label.textContent = formatGroupId(groupId, groups);
                 label.className = 'grid-sticky-label';
+                if (isCompactGrid) label.classList.add('grid-group-toggle');
                 row.appendChild(label);
                 
                 for (let s = 0; s < 48; s++) {
@@ -1778,6 +1873,43 @@
                 }
                 
                 container.appendChild(row);
+
+                if (isCompactGrid) {
+                    const expanded = document.createElement('div');
+                    expanded.className = 'grid-expanded';
+                    expanded.hidden = true;
+
+                    for (const [start, end, period] of [[0, 24, '00:00-12:00'], [24, 48, '12:00-24:00']]) {
+                        const section = document.createElement('div');
+                        const periodLabel = document.createElement('div');
+                        periodLabel.className = 'grid-expanded-period';
+                        periodLabel.textContent = period;
+                        section.appendChild(periodLabel);
+
+                        const slots = document.createElement('div');
+                        slots.className = 'grid-expanded-slots';
+                        for (let slot = start; slot < end; slot++) {
+                            const cell = document.createElement('div');
+                            const hasOutage = groupHourData[groupId][slot];
+                            cell.className = 'group-cell';
+                            cell.style.backgroundColor = hasOutage ? '#ef4444' : '#10b981';
+                            cell.title = `Group ${formatGroupId(groupId, groups)}: ${formatSlotTime(slot)}-${formatSlotTime(slot + 1)} ${hasOutage ? 'Outage' : 'Power on'}`;
+                            slots.appendChild(cell);
+                        }
+                        section.appendChild(slots);
+                        expanded.appendChild(section);
+                    }
+
+                    label.addEventListener('click', () => {
+                        const shouldExpand = expanded.hidden;
+                        container.querySelectorAll('.grid-expanded').forEach(panel => { panel.hidden = true; });
+                        container.querySelectorAll('.grid-group-toggle').forEach(button => button.setAttribute('aria-expanded', 'false'));
+                        expanded.hidden = !shouldExpand;
+                        label.setAttribute('aria-expanded', String(shouldExpand));
+                        label.setAttribute('aria-label', `${shouldExpand ? 'Hide' : 'Show'} detailed schedule for group ${formatGroupId(groupId, groups)}`);
+                    });
+                    container.appendChild(expanded);
+                }
             });
         }
 
